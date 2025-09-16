@@ -31,7 +31,15 @@ poetry run mypy src tests
 
 ### 3. Executing Notebooks
 
-The notebooks in this repository can be executed using `papermill` to ensure reproducibility and to run them with different parameters. To execute a notebook, use the following command structure:
+The notebooks in this repository can be executed using `papermill` to ensure reproducibility and to run them with different parameters.
+
+First, you need to register the project's virtual environment as a Jupyter kernel. Run this command once:
+
+```bash
+poetry run python -m ipykernel install --user --name=repmetric --display-name "Python (repmetric)"
+```
+
+Then, to execute a notebook, use the following command structure:
 
 ```bash
 poetry run papermill notebooks/input.ipynb notebooks/output.ipynb -p PARAM_NAME PARAM_VALUE
@@ -41,6 +49,8 @@ For example, to run the performance comparison:
 ```bash
 poetry run papermill notebooks/performance_comparison.ipynb notebooks/performance_comparison_output.ipynb
 ```
+
+**Note on Committing Notebooks:** As a general rule, do not commit the execution results of notebooks. Notebooks should only be executed for verification purposes, and the output cells should be cleared before committing.
 
 ## Language and Style
 
