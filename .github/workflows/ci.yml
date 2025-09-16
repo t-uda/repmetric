@@ -50,5 +50,7 @@ jobs:
       - name: Install specific numpy version
         if: matrix.numpy-version != ''
         run: poetry run pip install "numpy==${{ matrix.numpy-version }}"
+      - name: Build C++ extension
+        run: poetry run python setup.py build_ext --inplace
       - name: Run tests
         run: poetry run pytest
