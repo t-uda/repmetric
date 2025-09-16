@@ -1,21 +1,31 @@
 [project]
 name = "repmetric"
 version = "0.1.0"
-description = ""
+description = "A Python library for fast edit distance calculation, powered by C++."
 authors = [
     {name = "Tomoki Uda"}
 ]
 license = {file= "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.12, <3.13"
+keywords = ["edit distance", "levenshtein distance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "numpy (>=2.3.3,<3.0.0)",
-    "matplotlib (>=3.10.6,<4.0.0)",
-    "numba (==0.62.0rc2)",
-    "joblib (>=1.5.2,<2.0.0)",
-    "scikit-learn (>=1.7.2,<2.0.0)",
-    "umap-learn (>=0.5.9.post2,<0.6.0)"
 ]
+
+[project.urls]
+Homepage = "https://github.com/t-uda/repmetric"
+Repository = "https://github.com/t-uda/repmetric"
 
 
 [build-system]
@@ -41,10 +51,16 @@ ruff = "^0.5.0"
 black = {extras = ["jupyter"], version = "^25.1.0"}
 mypy = "^1.0.0"
 papermill = "^2.6.0"
+setuptools = "^70.3.0"
+
+[tool.poetry.group.notebook.dependencies]
+matplotlib = ">=3.10.6,<4.0.0"
+scikit-learn = ">=1.7.2,<2.0.0"
+umap-learn = ">=0.5.9.post2,<0.6.0"
+japanize-matplotlib = "^1.1.3"
 ipykernel = "^6.30.1"
 tqdm = "^4.67.1"
 plotly = "^6.3.0"
 pot = "^0.9.5"
 networkx = "^3.5"
 pandas = "^2.3.2"
-setuptools = "^70.3.0"
