@@ -30,11 +30,13 @@ def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
     return _calculate_cped_py(X, Y)
 
 
-def cped_matrix(sequences: List[str], backend: Backend = "cpp") -> np.ndarray:
+def cped_matrix(
+    sequences: List[str], backend: Backend = "cpp", parallel: bool = True
+) -> np.ndarray:
     """Calculate the pairwise CPED matrix."""
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
-        return _calculate_cped_distance_matrix_cpp(sequences)
+        return _calculate_cped_distance_matrix_cpp(sequences, parallel=parallel)
     return _calculate_cped_distance_matrix_py(sequences)
 
 
@@ -46,11 +48,13 @@ def levd(s1: str, s2: str, backend: Backend = "cpp") -> int:
     return _calculate_levd_py(s1, s2)
 
 
-def levd_matrix(sequences: List[str], backend: Backend = "cpp") -> np.ndarray:
+def levd_matrix(
+    sequences: List[str], backend: Backend = "cpp", parallel: bool = True
+) -> np.ndarray:
     """Calculate the pairwise Levenshtein distance matrix."""
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
-        return _calculate_levd_distance_matrix_cpp(sequences)
+        return _calculate_levd_distance_matrix_cpp(sequences, parallel=parallel)
     return _calculate_levd_distance_matrix_py(sequences)
 
 
@@ -60,6 +64,7 @@ def edit_distance(
     b: str,
     distance_type: DistanceType = "levd",
     backend: Backend = "cpp",
+    parallel: bool = True,
 ) -> int: ...
 
 
@@ -69,6 +74,7 @@ def edit_distance(
     b: None = None,
     distance_type: DistanceType = "levd",
     backend: Backend = "cpp",
+    parallel: bool = True,
 ) -> np.ndarray: ...
 
 
@@ -77,6 +83,7 @@ def edit_distance(
     b: Union[str, None] = None,
     distance_type: DistanceType = "levd",
     backend: Backend = "cpp",
+    parallel: bool = True,
 ) -> Union[int, np.ndarray]:
     """
     Calculates the edit distance between two strings or a matrix of distances
@@ -87,6 +94,7 @@ def edit_distance(
         b: The second string. If 'a' is a list, this should be None.
         distance_type: The type of distance to calculate ('cped' or 'levd').
         backend: The backend to use for calculation ('cpp' or 'python').
+        parallel: Whether to use parallel computation for the distance matrix.
 
     Returns:
         The edit distance as an integer, or a numpy array distance matrix.
@@ -95,9 +103,9 @@ def edit_distance(
         if b is not None:
             raise ValueError("When 'a' is a list, 'b' must be None.")
         if distance_type == "cped":
-            return cped_matrix(a, backend=backend)
+            return cped_matrix(a, backend=backend, parallel=parallel)
         elif distance_type == "levd":
-            return levd_matrix(a, backend=backend)
+            return levd_matrix(a, backend=backend, parallel=parallel)
         else:
             raise ValueError(f"Unknown distance_type: {distance_type}")
     elif isinstance(a, str) and isinstance(b, str):

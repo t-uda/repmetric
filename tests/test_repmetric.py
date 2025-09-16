@@ -92,11 +92,44 @@ def test_edit_distance_matrix():
     expected_levd = np.array([[0, 1, 2], [1, 0, 1], [2, 1, 0]])
     expected_cped = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
 
+    # Test parallel C++ implementation
+    if repmetric.CPP_AVAILABLE:
+        np.testing.assert_array_equal(
+            repmetric.edit_distance(
+                sequences, distance_type="levd", backend="cpp", parallel=True
+            ),
+            expected_levd,
+        )
+        np.testing.assert_array_equal(
+            repmetric.edit_distance(
+                sequences, distance_type="cped", backend="cpp", parallel=True
+            ),
+            expected_cped,
+        )
+
+    # Test sequential C++ implementation
+    if repmetric.CPP_AVAILABLE:
+        np.testing.assert_array_equal(
+            repmetric.edit_distance(
+                sequences, distance_type="levd", backend="cpp", parallel=False
+            ),
+            expected_levd,
+        )
+        np.testing.assert_array_equal(
+            repmetric.edit_distance(
+                sequences, distance_type="cped", backend="cpp", parallel=False
+            ),
+            expected_cped,
+        )
+
+    # Test python implementation
     np.testing.assert_array_equal(
-        repmetric.edit_distance(sequences, distance_type="levd"), expected_levd
+        repmetric.edit_distance(sequences, distance_type="levd", backend="python"),
+        expected_levd,
     )
     np.testing.assert_array_equal(
-        repmetric.edit_distance(sequences, distance_type="cped"), expected_cped
+        repmetric.edit_distance(sequences, distance_type="cped", backend="python"),
+        expected_cped,
     )
 
 

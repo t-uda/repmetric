@@ -79,29 +79,33 @@ extern "C" {
     }
 
     // Integer version of the distance matrix calculation
-    void calculate_cped_distance_matrix_cpp_int(const char** sequences, int n, int* dist_matrix) {
+    void calculate_cped_distance_matrix_cpp_int(const char** sequences, int n, int* dist_matrix, bool parallel) {
         std::vector<std::string> seqs(n);
         for (int i = 0; i < n; ++i) {
             seqs[i] = std::string(sequences[i]);
         }
 
-        auto worker = [&](int start_row) {
-            for (int i = start_row; i < n; i += std::thread::hardware_concurrency()) {
+        auto worker = [&](int start_row, int step) {
+            for (int i = start_row; i < n; i += step) {
                 for (int j = 0; j < n; ++j) {
                     dist_matrix[i * n + j] = _calculate_cped_template<int>(seqs[i], seqs[j]);
                 }
             }
         };
 
-        std::vector<std::thread> threads;
-        unsigned int num_threads = std::thread::hardware_concurrency();
-        if (num_threads == 0) num_threads = 1;
-        for (unsigned int i = 0; i < num_threads; ++i) {
-            threads.emplace_back(worker, i);
-        }
+        if (parallel) {
+            std::vector<std::thread> threads;
+            unsigned int num_threads = std::thread::hardware_concurrency();
+            if (num_threads == 0) num_threads = 1;
+            for (unsigned int i = 0; i < num_threads; ++i) {
+                threads.emplace_back(worker, i, num_threads);
+            }
 
-        for (auto& t : threads) {
-            t.join();
+            for (auto& t : threads) {
+                t.join();
+            }
+        } else {
+            worker(0, 1); // Sequential execution
         }
     }
 }
