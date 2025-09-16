@@ -34,6 +34,7 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
             ctypes.POINTER(ctypes.c_char_p),
             ctypes.c_int,
             np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+            ctypes.c_bool,
         ]
         repmetric_lib.calculate_cped_distance_matrix_cpp_int.restype = None
 
@@ -47,6 +48,7 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
             ctypes.POINTER(ctypes.c_char_p),
             ctypes.c_int,
             np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+            ctypes.c_bool,
         ]
         repmetric_lib.calculate_levd_distance_matrix_cpp_int.restype = None
 
@@ -117,7 +119,9 @@ def _calculate_cped_distance_matrix_py(sequences: List[str]) -> np.ndarray:
     return dist_matrix
 
 
-def _calculate_cped_distance_matrix_cpp(sequences: List[str]) -> np.ndarray:
+def _calculate_cped_distance_matrix_cpp(
+    sequences: List[str], parallel: bool
+) -> np.ndarray:
     """Calculate the pairwise CPED matrix using C++."""
     if not repmetric_lib:
         raise RuntimeError("C++ library not available.")
@@ -126,7 +130,9 @@ def _calculate_cped_distance_matrix_cpp(sequences: List[str]) -> np.ndarray:
     encoded_seqs = [s.encode("utf-8") for s in sequences]
     seq_array[:] = encoded_seqs  # type: ignore
     dist_matrix = np.zeros((n, n), dtype=np.int32)
-    repmetric_lib.calculate_cped_distance_matrix_cpp_int(seq_array, n, dist_matrix)
+    repmetric_lib.calculate_cped_distance_matrix_cpp_int(
+        seq_array, n, dist_matrix, parallel
+    )
     return dist_matrix
 
 
@@ -177,7 +183,9 @@ def _calculate_levd_distance_matrix_py(sequences: List[str]) -> np.ndarray:
     return dist_matrix
 
 
-def _calculate_levd_distance_matrix_cpp(sequences: List[str]) -> np.ndarray:
+def _calculate_levd_distance_matrix_cpp(
+    sequences: List[str], parallel: bool
+) -> np.ndarray:
     """Calculate the pairwise Levenshtein matrix using C++."""
     if not repmetric_lib:
         raise RuntimeError("C++ library not available.")
@@ -186,5 +194,7 @@ def _calculate_levd_distance_matrix_cpp(sequences: List[str]) -> np.ndarray:
     encoded_seqs = [s.encode("utf-8") for s in sequences]
     seq_array[:] = encoded_seqs  # type: ignore
     dist_matrix = np.zeros((n, n), dtype=np.int32)
-    repmetric_lib.calculate_levd_distance_matrix_cpp_int(seq_array, n, dist_matrix)
+    repmetric_lib.calculate_levd_distance_matrix_cpp_int(
+        seq_array, n, dist_matrix, parallel
+    )
     return dist_matrix
