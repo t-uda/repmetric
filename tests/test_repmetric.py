@@ -36,15 +36,11 @@ LEVD_TEST_CASES = [
 @pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
 @pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_cped_correctness(X, Y, expected, backend):
-    if backend in ("cpp", "c++") and not repmetric.CPP_AVAILABLE:
-        pytest.skip("C++ backend not available.")
     assert repmetric.cped(X, Y, backend=backend) == expected
 
 
 @pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_cped_matrix_correctness(backend):
-    if backend in ("cpp", "c++") and not repmetric.CPP_AVAILABLE:
-        pytest.skip("C++ backend not available.")
     sequences = ["a", "ab", "abc"]
     expected_matrix = np.array([[0, 1, 1], [1, 0, 1], [2, 1, 0]])
     dist_matrix = repmetric.cped_matrix(sequences, backend=backend)
@@ -59,15 +55,11 @@ def test_cped_matrix_correctness(backend):
 @pytest.mark.parametrize("s1, s2, expected", LEVD_TEST_CASES)
 @pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_levd_correctness(s1, s2, expected, backend):
-    if backend in ("cpp", "c++") and not repmetric.CPP_AVAILABLE:
-        pytest.skip("C++ backend not available.")
     assert repmetric.levd(s1, s2, backend=backend) == expected
 
 
 @pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_levd_matrix_correctness(backend):
-    if backend in ("cpp", "c++") and not repmetric.CPP_AVAILABLE:
-        pytest.skip("C++ backend not available.")
     sequences = ["a", "ab", "abc"]
     expected_matrix = np.array([[0, 1, 2], [1, 0, 1], [2, 1, 0]])
     dist_matrix = repmetric.levd_matrix(sequences, backend=backend)
@@ -93,34 +85,32 @@ def test_edit_distance_matrix():
     expected_cped = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
 
     # Test parallel C++ implementation
-    if repmetric.CPP_AVAILABLE:
-        np.testing.assert_array_equal(
-            repmetric.edit_distance(
-                sequences, distance_type="levd", backend="cpp", parallel=True
-            ),
-            expected_levd,
-        )
-        np.testing.assert_array_equal(
-            repmetric.edit_distance(
-                sequences, distance_type="cped", backend="cpp", parallel=True
-            ),
-            expected_cped,
-        )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="levd", backend="cpp", parallel=True
+        ),
+        expected_levd,
+    )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="cped", backend="cpp", parallel=True
+        ),
+        expected_cped,
+    )
 
     # Test sequential C++ implementation
-    if repmetric.CPP_AVAILABLE:
-        np.testing.assert_array_equal(
-            repmetric.edit_distance(
-                sequences, distance_type="levd", backend="cpp", parallel=False
-            ),
-            expected_levd,
-        )
-        np.testing.assert_array_equal(
-            repmetric.edit_distance(
-                sequences, distance_type="cped", backend="cpp", parallel=False
-            ),
-            expected_cped,
-        )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="levd", backend="cpp", parallel=False
+        ),
+        expected_levd,
+    )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="cped", backend="cpp", parallel=False
+        ),
+        expected_cped,
+    )
 
     # Test python implementation
     np.testing.assert_array_equal(
@@ -194,7 +184,4 @@ def test_triangle_inequality():
 
 @pytest.mark.parametrize("X, Y, _", CPED_TEST_CASES)
 def test_cped_le_levenshtein(X, Y, _):
-    if repmetric.CPP_AVAILABLE:
-        assert repmetric.cped(X, Y) <= repmetric.levd(X, Y)
-    else:
-        pytest.skip("C++ backend not available for comparison.")
+    assert repmetric.cped(X, Y) <= repmetric.levd(X, Y)
