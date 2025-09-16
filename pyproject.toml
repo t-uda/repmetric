@@ -7,20 +7,22 @@ authors = [
 ]
 license = {file= "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.12, <3.13"
+requires-python = ">=3.10, <3.13"
 keywords = ["edit distance", "levenshtein distance"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "numpy (>=2.3.3,<3.0.0)",
+    "numpy>=2.0.0",
 ]
 
 [project.urls]
@@ -62,5 +64,5 @@ ipykernel = "^6.30.1"
 tqdm = "^4.67.1"
 plotly = "^6.3.0"
 pot = "^0.9.5"
-networkx = "^3.5"
+networkx = {version = "^3.5", python = ">=3.11"}
 pandas = "^2.3.2"
