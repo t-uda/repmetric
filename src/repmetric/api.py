@@ -11,21 +11,41 @@ from .backend import (
     _calculate_cped_cpp,
     _calculate_cped_distance_matrix_cpp,
     _calculate_cped_distance_matrix_py,
+    _calculate_cped_distance_matrix_py_bidirectional,
     _calculate_cped_py,
+    _calculate_cped_py_bidirectional,
     _calculate_levd_cpp,
     _calculate_levd_distance_matrix_cpp,
     _calculate_levd_distance_matrix_py,
     _calculate_levd_py,
 )
 
-Backend = Literal["cpp", "c++", "python"]
+Backend = Literal[
+    "cpp",
+    "c++",
+    "python",
+    "python-bidir",
+    "python_bidirectional",
+    "bidirectional",
+    "cpp-bidir",
+    "cpp_bidirectional",
+]
 DistanceType = Literal["cped", "levd"]
 
 
 def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
     """Calculate the Copy & Paste Edit Distance (CPED)."""
-    use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
-    if use_cpp:
+
+    backend_lower = backend.lower()
+    if backend_lower in (
+        "python-bidir",
+        "python_bidirectional",
+        "bidirectional",
+        "cpp-bidir",
+        "cpp_bidirectional",
+    ):
+        return _calculate_cped_py_bidirectional(X, Y)
+    if backend_lower in ("cpp", "c++") and CPP_AVAILABLE:
         return _calculate_cped_cpp(X, Y)
     return _calculate_cped_py(X, Y)
 
@@ -34,8 +54,17 @@ def cped_matrix(
     sequences: List[str], backend: Backend = "cpp", parallel: bool = True
 ) -> np.ndarray:
     """Calculate the pairwise CPED matrix."""
-    use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
-    if use_cpp:
+
+    backend_lower = backend.lower()
+    if backend_lower in (
+        "python-bidir",
+        "python_bidirectional",
+        "bidirectional",
+        "cpp-bidir",
+        "cpp_bidirectional",
+    ):
+        return _calculate_cped_distance_matrix_py_bidirectional(sequences)
+    if backend_lower in ("cpp", "c++") and CPP_AVAILABLE:
         return _calculate_cped_distance_matrix_cpp(sequences, parallel=parallel)
     return _calculate_cped_distance_matrix_py(sequences)
 
@@ -93,7 +122,8 @@ def edit_distance(
         a: The first string or a list of strings.
         b: The second string. If 'a' is a list, this should be None.
         distance_type: The type of distance to calculate ('cped' or 'levd').
-        backend: The backend to use for calculation ('cpp' or 'python').
+        backend: The backend to use for calculation ('cpp', 'python', or
+            'python-bidir').
         parallel: Whether to use parallel computation for the distance matrix.
 
     Returns:

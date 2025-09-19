@@ -34,12 +34,12 @@ LEVD_TEST_CASES = [
 
 
 @pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
-@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
+@pytest.mark.parametrize("backend", ["python", "python-bidir", "cpp", "c++"])
 def test_cped_correctness(X, Y, expected, backend):
     assert repmetric.cped(X, Y, backend=backend) == expected
 
 
-@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
+@pytest.mark.parametrize("backend", ["python", "python-bidir", "cpp", "c++"])
 def test_cped_matrix_correctness(backend):
     sequences = ["a", "ab", "abc"]
     expected_matrix = np.array([[0, 1, 1], [1, 0, 1], [2, 1, 0]])
@@ -47,6 +47,13 @@ def test_cped_matrix_correctness(backend):
     # Corrected expected matrix based on re-evaluating cped logic
     expected_matrix = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
+
+
+def test_cped_bidirectional_improvement():
+    baseline = repmetric.cped("", "aaaba", backend="python")
+    improved = repmetric.cped("", "aaaba", backend="python-bidir")
+    assert baseline >= improved
+    assert improved == 4
 
 
 # --- Levenshtein Backend Correctness Tests ---
@@ -119,6 +126,12 @@ def test_edit_distance_matrix():
     )
     np.testing.assert_array_equal(
         repmetric.edit_distance(sequences, distance_type="cped", backend="python"),
+        expected_cped,
+    )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="cped", backend="python-bidir"
+        ),
         expected_cped,
     )
 
