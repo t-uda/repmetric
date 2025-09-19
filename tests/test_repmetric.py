@@ -191,16 +191,28 @@ def test_cped_le_levenshtein(X, Y, _):
     assert repmetric.cped(X, Y) <= repmetric.levd(X, Y)
 
 
-@pytest.mark.xfail(reason="The bidirectional algorithm does not currently produce the expected optimal value of 4 for this case.")
-def test_cped_bidirectional_correctness():
-    # Test case from user where one-way approx is suboptimal
-    # cped_approx("", "aaaba") -> 5
-    # The user claims the optimal is 4. The bidirectional method currently gives 5.
-    # cped_approx("".reverse(), "aaaba".reverse()) -> cped_approx("", "abaaa") -> 5
-    # min(5, 5) = 5
-    assert repmetric.cped("", "aaaba", method="approx") == 5
-    assert repmetric.cped("", "aaaba", method="bidirectional") == 4
-
-    # Test case where forward is better
+def test_bidirectional_maintains_optimal():
+    """
+    Tests that the bidirectional method does not worsen a result that is
+    already optimal in the forward direction.
+    """
+    # For this case, forward is optimal (cost 1). Backward is suboptimal.
+    # cped("ba", "baba") = 2. min(1, 2) = 1.
     assert repmetric.cped("ab", "abab", method="approx") == 1
     assert repmetric.cped("ab", "abab", method="bidirectional") == 1
+
+
+@pytest.mark.xfail(
+    reason="The bidirectional algorithm does not currently produce the expected optimal value of 4 for this case."
+)
+def test_bidirectional_known_limitation():
+    """
+    Tests the known limitation of the bidirectional method for the user-provided
+    use case.
+    """
+    # cped_approx("", "aaaba") -> 5 (suboptimal)
+    # The user claims the true optimal value is 4.
+    # cped_approx("", "abaaa") -> 5 (the reverse direction is also suboptimal)
+    # min(5, 5) = 5, so the test fails.
+    assert repmetric.cped("", "aaaba", method="approx") == 5
+    assert repmetric.cped("", "aaaba", method="bidirectional") == 4
