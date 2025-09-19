@@ -108,8 +108,8 @@ def _compute_cped_dp_table(X: str, Y: str, max_copy_len: int = 20) -> List[List[
     return dp
 
 
-def _calculate_cped_py_bidirectional(X: str, Y: str) -> int:
-    """Calculate CPED using a bidirectional refinement of the DP approximation."""
+def _calculate_bicped_py(X: str, Y: str) -> int:
+    """Calculate CPED using the bidirectional (BICPed) DP refinement."""
 
     max_copy_len = 20
     forward_dp = _compute_cped_dp_table(X, Y, max_copy_len=max_copy_len)
@@ -168,18 +168,16 @@ def _calculate_cped_distance_matrix_py(sequences: List[str]) -> np.ndarray:
     return dist_matrix
 
 
-def _calculate_cped_distance_matrix_py_bidirectional(
+def _calculate_bicped_distance_matrix_py(
     sequences: List[str],
 ) -> np.ndarray:
-    """Calculate the pairwise CPED matrix using the bidirectional approximation."""
+    """Calculate the pairwise BICPed matrix using the bidirectional approximation."""
 
     n = len(sequences)
     dist_matrix = np.zeros((n, n), dtype=np.int32)
     for i in range(n):
         for j in range(n):
-            dist_matrix[i, j] = _calculate_cped_py_bidirectional(
-                sequences[i], sequences[j]
-            )
+            dist_matrix[i, j] = _calculate_bicped_py(sequences[i], sequences[j])
     return dist_matrix
 
 

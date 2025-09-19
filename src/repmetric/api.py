@@ -8,12 +8,12 @@ import numpy as np
 
 from .backend import (
     CPP_AVAILABLE,
+    _calculate_bicped_distance_matrix_py,
+    _calculate_bicped_py,
     _calculate_cped_cpp,
     _calculate_cped_distance_matrix_cpp,
     _calculate_cped_distance_matrix_py,
-    _calculate_cped_distance_matrix_py_bidirectional,
     _calculate_cped_py,
-    _calculate_cped_py_bidirectional,
     _calculate_levd_cpp,
     _calculate_levd_distance_matrix_cpp,
     _calculate_levd_distance_matrix_py,
@@ -24,16 +24,8 @@ Backend = Literal["cpp", "c++", "python"]
 DistanceType = Literal[
     "cped",
     "levd",
-    "cped-bidir",
-    "cped_bidirectional",
-    "cped-bidirectional",
+    "bicped",
 ]
-
-_CPED_BIDIRECTIONAL_TYPES = {
-    "cped-bidir",
-    "cped_bidirectional",
-    "cped-bidirectional",
-}
 
 
 def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
@@ -49,6 +41,14 @@ def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
     raise ValueError(f"Unknown backend: {backend}")
 
 
+def bicped(X: str, Y: str, backend: Backend = "python") -> int:
+    """Calculate the bidirectional CPED approximation (BICPed)."""
+
+    if backend.lower() != "python":
+        raise ValueError("BICPed is only available with the Python backend.")
+    return _calculate_bicped_py(X, Y)
+
+
 def cped_matrix(
     sequences: List[str], backend: Backend = "cpp", parallel: bool = True
 ) -> np.ndarray:
@@ -62,6 +62,12 @@ def cped_matrix(
     if backend_lower == "python":
         return _calculate_cped_distance_matrix_py(sequences)
     raise ValueError(f"Unknown backend: {backend}")
+
+
+def bicped_matrix(sequences: List[str]) -> np.ndarray:
+    """Calculate the pairwise bidirectional CPED (BICPed) matrix."""
+
+    return _calculate_bicped_distance_matrix_py(sequences)
 
 
 def levd(s1: str, s2: str, backend: Backend = "cpp") -> int:
@@ -117,8 +123,8 @@ def edit_distance(
         a: The first string or a list of strings.
         b: The second string. If 'a' is a list, this should be None.
         distance_type: The type of distance to calculate.
-            Supported values are 'cped', 'levd', and the bidirectional CPED
-            aliases 'cped-bidir', 'cped_bidirectional', and 'cped-bidirectional'.
+            Supported values are 'cped', 'levd', and 'bicped' (the
+            bidirectional CPED approximation).
         backend: The backend to use for calculation ('cpp', 'python').
         parallel: Whether to use parallel computation for the distance matrix.
 
@@ -131,12 +137,10 @@ def edit_distance(
         distance_type_lower = distance_type.lower()
         if distance_type_lower == "cped":
             return cped_matrix(a, backend=backend, parallel=parallel)
-        if distance_type_lower in _CPED_BIDIRECTIONAL_TYPES:
+        if distance_type_lower == "bicped":
             if backend.lower() != "python":
-                raise ValueError(
-                    "Bidirectional CPED is only available with the Python backend."
-                )
-            return _calculate_cped_distance_matrix_py_bidirectional(a)
+                raise ValueError("BICPed is only available with the Python backend.")
+            return bicped_matrix(a)
         if distance_type_lower == "levd":
             return levd_matrix(a, backend=backend, parallel=parallel)
         raise ValueError(f"Unknown distance_type: {distance_type}")
@@ -144,12 +148,10 @@ def edit_distance(
         distance_type_lower = distance_type.lower()
         if distance_type_lower == "cped":
             return cped(a, b, backend=backend)
-        if distance_type_lower in _CPED_BIDIRECTIONAL_TYPES:
+        if distance_type_lower == "bicped":
             if backend.lower() != "python":
-                raise ValueError(
-                    "Bidirectional CPED is only available with the Python backend."
-                )
-            return _calculate_cped_py_bidirectional(a, b)
+                raise ValueError("BICPed is only available with the Python backend.")
+            return bicped(a, b, backend=backend)
         if distance_type_lower == "levd":
             return levd(a, b, backend=backend)
         raise ValueError(f"Unknown distance_type: {distance_type}")
@@ -163,7 +165,9 @@ __all__ = [
     "Backend",
     "DistanceType",
     "cped",
+    "bicped",
     "cped_matrix",
+    "bicped_matrix",
     "levd",
     "levd_matrix",
     "edit_distance",

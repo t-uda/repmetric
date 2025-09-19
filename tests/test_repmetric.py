@@ -49,12 +49,12 @@ def test_cped_matrix_correctness(backend):
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
 
 
-def test_cped_bidirectional_improvement():
+def test_bicped_improvement():
     baseline = repmetric.edit_distance(
         "", "aaaba", distance_type="cped", backend="python"
     )
     improved = repmetric.edit_distance(
-        "", "aaaba", distance_type="cped-bidir", backend="python"
+        "", "aaaba", distance_type="bicped", backend="python"
     )
     assert baseline >= improved
     assert improved == 4
@@ -133,9 +133,7 @@ def test_edit_distance_matrix():
         expected_cped,
     )
     np.testing.assert_array_equal(
-        repmetric.edit_distance(
-            sequences, distance_type="cped-bidir", backend="python"
-        ),
+        repmetric.edit_distance(sequences, distance_type="bicped", backend="python"),
         expected_cped,
     )
 
@@ -149,24 +147,28 @@ def test_edit_distance_invalid_args():
         repmetric.edit_distance("a")  # Missing b
 
 
-@pytest.mark.parametrize(
-    "distance_type",
-    ["cped-bidir", "cped_bidirectional", "cped-bidirectional"],
-)
-def test_edit_distance_cped_bidirectional_aliases(distance_type):
+def test_edit_distance_bicped():
     assert (
-        repmetric.edit_distance(
-            "", "aaaba", distance_type=distance_type, backend="python"
-        )
+        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend="python")
         == 4
     )
 
 
 def test_edit_distance_cped_bidirectional_requires_python_backend():
     with pytest.raises(ValueError):
-        repmetric.edit_distance("a", "b", distance_type="cped-bidir", backend="cpp")
+        repmetric.edit_distance("a", "b", distance_type="bicped", backend="cpp")
     with pytest.raises(ValueError):
-        repmetric.edit_distance(["a", "b"], distance_type="cped-bidir", backend="cpp")
+        repmetric.edit_distance(["a", "b"], distance_type="bicped", backend="cpp")
+
+
+def test_bicped_function():
+    assert repmetric.bicped("", "aaaba", backend="python") == 4
+
+
+def test_bicped_matrix_function():
+    sequences = ["a", "ab", "abc"]
+    expected = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
+    np.testing.assert_array_equal(repmetric.bicped_matrix(sequences), expected)
 
 
 # --- Fallback Mechanism Tests ---
