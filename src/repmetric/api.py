@@ -20,31 +20,23 @@ from .backend import (
     _calculate_levd_py,
 )
 
-Backend = Literal[
-    "cpp",
-    "c++",
-    "python",
-    "python-bidir",
-    "python_bidirectional",
-    "bidirectional",
-    "cpp-bidir",
-    "cpp_bidirectional",
-]
-DistanceType = Literal["cped", "levd"]
+Backend = Literal["cpp", "c++", "python"]
+DistanceType = Literal["cped", "cped-bidir", "cped_bidirectional", "levd"]
+
+
+def _normalize_distance_type(distance_type: str) -> str:
+    """Return the canonical lowercase distance type name."""
+
+    normalized = distance_type.lower()
+    if normalized == "cped_bidirectional":
+        return "cped-bidir"
+    return normalized
 
 
 def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
     """Calculate the Copy & Paste Edit Distance (CPED)."""
 
     backend_lower = backend.lower()
-    if backend_lower in (
-        "python-bidir",
-        "python_bidirectional",
-        "bidirectional",
-        "cpp-bidir",
-        "cpp_bidirectional",
-    ):
-        return _calculate_cped_py_bidirectional(X, Y)
     if backend_lower in ("cpp", "c++") and CPP_AVAILABLE:
         return _calculate_cped_cpp(X, Y)
     return _calculate_cped_py(X, Y)
@@ -56,14 +48,6 @@ def cped_matrix(
     """Calculate the pairwise CPED matrix."""
 
     backend_lower = backend.lower()
-    if backend_lower in (
-        "python-bidir",
-        "python_bidirectional",
-        "bidirectional",
-        "cpp-bidir",
-        "cpp_bidirectional",
-    ):
-        return _calculate_cped_distance_matrix_py_bidirectional(sequences)
     if backend_lower in ("cpp", "c++") and CPP_AVAILABLE:
         return _calculate_cped_distance_matrix_cpp(sequences, parallel=parallel)
     return _calculate_cped_distance_matrix_py(sequences)
@@ -121,9 +105,11 @@ def edit_distance(
     Args:
         a: The first string or a list of strings.
         b: The second string. If 'a' is a list, this should be None.
-        distance_type: The type of distance to calculate ('cped' or 'levd').
-        backend: The backend to use for calculation ('cpp', 'python', or
-            'python-bidir').
+        distance_type: The type of distance to calculate ('cped', 'cped-bidir',
+            or 'levd'). The 'cped-bidir' option uses the bidirectional CPED
+            approximation and always falls back to the Python backend.
+        backend: The backend to use for calculation ('cpp', 'c++', or
+            'python').
         parallel: Whether to use parallel computation for the distance matrix.
 
     Returns:
@@ -132,19 +118,23 @@ def edit_distance(
     if isinstance(a, list):
         if b is not None:
             raise ValueError("When 'a' is a list, 'b' must be None.")
-        if distance_type == "cped":
+        normalized_type = _normalize_distance_type(distance_type)
+        if normalized_type == "cped":
             return cped_matrix(a, backend=backend, parallel=parallel)
-        elif distance_type == "levd":
+        if normalized_type == "cped-bidir":
+            return _calculate_cped_distance_matrix_py_bidirectional(a)
+        if normalized_type == "levd":
             return levd_matrix(a, backend=backend, parallel=parallel)
-        else:
-            raise ValueError(f"Unknown distance_type: {distance_type}")
+        raise ValueError(f"Unknown distance_type: {distance_type}")
     elif isinstance(a, str) and isinstance(b, str):
-        if distance_type == "cped":
+        normalized_type = _normalize_distance_type(distance_type)
+        if normalized_type == "cped":
             return cped(a, b, backend=backend)
-        elif distance_type == "levd":
+        if normalized_type == "cped-bidir":
+            return _calculate_cped_py_bidirectional(a, b)
+        if normalized_type == "levd":
             return levd(a, b, backend=backend)
-        else:
-            raise ValueError(f"Unknown distance_type: {distance_type}")
+        raise ValueError(f"Unknown distance_type: {distance_type}")
     else:
         raise TypeError(
             "Inputs 'a' and 'b' must be both strings or 'a' must be a list and 'b' None."

@@ -34,12 +34,12 @@ LEVD_TEST_CASES = [
 
 
 @pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
-@pytest.mark.parametrize("backend", ["python", "python-bidir", "cpp", "c++"])
+@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_cped_correctness(X, Y, expected, backend):
     assert repmetric.cped(X, Y, backend=backend) == expected
 
 
-@pytest.mark.parametrize("backend", ["python", "python-bidir", "cpp", "c++"])
+@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
 def test_cped_matrix_correctness(backend):
     sequences = ["a", "ab", "abc"]
     expected_matrix = np.array([[0, 1, 1], [1, 0, 1], [2, 1, 0]])
@@ -51,7 +51,9 @@ def test_cped_matrix_correctness(backend):
 
 def test_cped_bidirectional_improvement():
     baseline = repmetric.cped("", "aaaba", backend="python")
-    improved = repmetric.cped("", "aaaba", backend="python-bidir")
+    improved = repmetric.edit_distance(
+        "", "aaaba", distance_type="cped-bidir", backend="python"
+    )
     assert baseline >= improved
     assert improved == 4
 
@@ -84,6 +86,11 @@ def test_edit_distance_levd(s1, s2, expected):
 @pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
 def test_edit_distance_cped(X, Y, expected):
     assert repmetric.edit_distance(X, Y, distance_type="cped") == expected
+
+
+@pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
+def test_edit_distance_cped_bidirectional(X, Y, expected):
+    assert repmetric.edit_distance(X, Y, distance_type="cped-bidir") == expected
 
 
 def test_edit_distance_matrix():
@@ -130,7 +137,7 @@ def test_edit_distance_matrix():
     )
     np.testing.assert_array_equal(
         repmetric.edit_distance(
-            sequences, distance_type="cped", backend="python-bidir"
+            sequences, distance_type="cped-bidir", backend="python"
         ),
         expected_cped,
     )
