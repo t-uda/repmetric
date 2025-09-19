@@ -133,7 +133,9 @@ def _calculate_cped_distance_matrix_py(
     n = len(sequences)
     dist_matrix = np.zeros((n, n), dtype=np.int32)
     cped_func = (
-        _calculate_cped_bidirectional_py if method == "bidirectional" else _calculate_cped_py
+        _calculate_cped_bidirectional_py
+        if method == "bidirectional"
+        else _calculate_cped_py
     )
     for i in range(n):
         for j in range(n):
