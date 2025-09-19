@@ -9,7 +9,7 @@
 // --- Template-based Core Implementation ---
 
 template <typename T>
-T _calculate_cped_template(const std::string& X, const std::string& Y) {
+T _calculate_cped_template(std::string X, std::string Y) {
     const size_t n = X.length();
     const size_t m = Y.length();
     const T INF = std::numeric_limits<T>::max() / 2;
@@ -65,6 +65,20 @@ T _calculate_cped_template(const std::string& X, const std::string& Y) {
     return (result >= INF) ? -1 : result;
 }
 
+// --- Bidirectional Template ---
+
+template <typename T>
+T _calculate_cped_bidirectional_template(std::string X, std::string Y) {
+    T forward_dist = _calculate_cped_template<T>(X, Y);
+
+    std::reverse(X.begin(), X.end());
+    std::reverse(Y.begin(), Y.end());
+    T backward_dist = _calculate_cped_template<T>(X, Y);
+
+    return std::min(forward_dist, backward_dist);
+}
+
+
 // --- C-style Interface for Python ---
 
 extern "C" {
@@ -73,22 +87,31 @@ extern "C" {
         return _calculate_cped_template<int>(std::string(X_str), std::string(Y_str));
     }
 
+    int calculate_cped_bidirectional_cpp_int(const char* X_str, const char* Y_str) {
+        return _calculate_cped_bidirectional_template<int>(std::string(X_str), std::string(Y_str));
+    }
+
     // Expose the double version for future weighted extensions
     double calculate_cped_cpp_double(const char* X_str, const char* Y_str) {
         return _calculate_cped_template<double>(std::string(X_str), std::string(Y_str));
     }
 
     // Integer version of the distance matrix calculation
-    void calculate_cped_distance_matrix_cpp_int(const char** sequences, int n, int* dist_matrix, bool parallel) {
+    void calculate_cped_distance_matrix_cpp_int(const char** sequences, int n, int* dist_matrix, bool parallel, const char* method_str) {
         std::vector<std::string> seqs(n);
         for (int i = 0; i < n; ++i) {
             seqs[i] = std::string(sequences[i]);
         }
 
+        std::string method(method_str);
+        auto cped_func = (method == "bidirectional")
+            ? _calculate_cped_bidirectional_template<int>
+            : _calculate_cped_template<int>;
+
         auto worker = [&](int start_row, int step) {
             for (int i = start_row; i < n; i += step) {
                 for (int j = 0; j < n; ++j) {
-                    dist_matrix[i * n + j] = _calculate_cped_template<int>(seqs[i], seqs[j]);
+                    dist_matrix[i * n + j] = cped_func(seqs[i], seqs[j]);
                 }
             }
         };

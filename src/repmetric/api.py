@@ -8,6 +8,7 @@ import numpy as np
 
 from .backend import (
     CPP_AVAILABLE,
+    _calculate_cped_bidirectional_py,
     _calculate_cped_cpp,
     _calculate_cped_distance_matrix_cpp,
     _calculate_cped_distance_matrix_py,
@@ -20,24 +21,35 @@ from .backend import (
 
 Backend = Literal["cpp", "c++", "python"]
 DistanceType = Literal["cped", "levd"]
+CPEDMethod = Literal["approx", "bidirectional"]
 
 
-def cped(X: str, Y: str, backend: Backend = "cpp") -> int:
+def cped(
+    X: str, Y: str, backend: Backend = "cpp", method: CPEDMethod = "bidirectional"
+) -> int:
     """Calculate the Copy & Paste Edit Distance (CPED)."""
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
-        return _calculate_cped_cpp(X, Y)
-    return _calculate_cped_py(X, Y)
+        return _calculate_cped_cpp(X, Y, method=method)
+
+    if method == "approx":
+        return _calculate_cped_py(X, Y)
+    return _calculate_cped_bidirectional_py(X, Y)
 
 
 def cped_matrix(
-    sequences: List[str], backend: Backend = "cpp", parallel: bool = True
+    sequences: List[str],
+    backend: Backend = "cpp",
+    parallel: bool = True,
+    method: CPEDMethod = "bidirectional",
 ) -> np.ndarray:
     """Calculate the pairwise CPED matrix."""
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
-        return _calculate_cped_distance_matrix_cpp(sequences, parallel=parallel)
-    return _calculate_cped_distance_matrix_py(sequences)
+        return _calculate_cped_distance_matrix_cpp(
+            sequences, parallel=parallel, method=method
+        )
+    return _calculate_cped_distance_matrix_py(sequences, method=method)
 
 
 def levd(s1: str, s2: str, backend: Backend = "cpp") -> int:

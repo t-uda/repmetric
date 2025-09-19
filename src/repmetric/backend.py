@@ -30,11 +30,17 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
             ctypes.c_char_p,
         ]
         repmetric_lib.calculate_cped_cpp_int.restype = ctypes.c_int
+        repmetric_lib.calculate_cped_bidirectional_cpp_int.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+        ]
+        repmetric_lib.calculate_cped_bidirectional_cpp_int.restype = ctypes.c_int
         repmetric_lib.calculate_cped_distance_matrix_cpp_int.argtypes = [
             ctypes.POINTER(ctypes.c_char_p),
             ctypes.c_int,
             np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
             ctypes.c_bool,
+            ctypes.c_char_p,
         ]
         repmetric_lib.calculate_cped_distance_matrix_cpp_int.restype = None
 
@@ -100,27 +106,43 @@ def _calculate_cped_py(X: str, Y: str) -> int:
     return distance
 
 
-def _calculate_cped_cpp(X: str, Y: str) -> int:
+def _calculate_cped_bidirectional_py(X: str, Y: str) -> int:
+    """Calculate CPED using bidirectional approach."""
+    forward_dist = _calculate_cped_py(X, Y)
+    X_rev = X[::-1]
+    Y_rev = Y[::-1]
+    backward_dist = _calculate_cped_py(X_rev, Y_rev)
+    return min(forward_dist, backward_dist)
+
+
+def _calculate_cped_cpp(X: str, Y: str, method: str = "bidirectional") -> int:
     """Wrapper for the C++ CPED calculation."""
     if not repmetric_lib:
         raise RuntimeError("C++ library not available.")
     X_bytes = X.encode("utf-8")
     Y_bytes = Y.encode("utf-8")
+    if method == "bidirectional":
+        return repmetric_lib.calculate_cped_bidirectional_cpp_int(X_bytes, Y_bytes)
     return repmetric_lib.calculate_cped_cpp_int(X_bytes, Y_bytes)
 
 
-def _calculate_cped_distance_matrix_py(sequences: List[str]) -> np.ndarray:
+def _calculate_cped_distance_matrix_py(
+    sequences: List[str], method: str = "bidirectional"
+) -> np.ndarray:
     """Calculate the pairwise CPED matrix using Python."""
     n = len(sequences)
     dist_matrix = np.zeros((n, n), dtype=np.int32)
+    cped_func = (
+        _calculate_cped_bidirectional_py if method == "bidirectional" else _calculate_cped_py
+    )
     for i in range(n):
         for j in range(n):
-            dist_matrix[i, j] = _calculate_cped_py(sequences[i], sequences[j])
+            dist_matrix[i, j] = cped_func(sequences[i], sequences[j])
     return dist_matrix
 
 
 def _calculate_cped_distance_matrix_cpp(
-    sequences: List[str], parallel: bool
+    sequences: List[str], parallel: bool, method: str = "bidirectional"
 ) -> np.ndarray:
     """Calculate the pairwise CPED matrix using C++."""
     if not repmetric_lib:
@@ -130,8 +152,9 @@ def _calculate_cped_distance_matrix_cpp(
     encoded_seqs = [s.encode("utf-8") for s in sequences]
     seq_array[:] = encoded_seqs  # type: ignore
     dist_matrix = np.zeros((n, n), dtype=np.int32)
+    method_bytes = method.encode("utf-8")
     repmetric_lib.calculate_cped_distance_matrix_cpp_int(
-        seq_array, n, dist_matrix, parallel
+        seq_array, n, dist_matrix, parallel, method_bytes
     )
     return dist_matrix
 
