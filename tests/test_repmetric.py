@@ -49,6 +49,17 @@ def test_cped_matrix_correctness(backend):
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
 
 
+def test_bicped_improvement():
+    baseline = repmetric.edit_distance(
+        "", "aaaba", distance_type="cped", backend="python"
+    )
+    improved = repmetric.edit_distance(
+        "", "aaaba", distance_type="bicped", backend="python"
+    )
+    assert baseline >= improved
+    assert improved == 4
+
+
 # --- Levenshtein Backend Correctness Tests ---
 
 
@@ -121,6 +132,10 @@ def test_edit_distance_matrix():
         repmetric.edit_distance(sequences, distance_type="cped", backend="python"),
         expected_cped,
     )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(sequences, distance_type="bicped", backend="python"),
+        expected_cped,
+    )
 
 
 def test_edit_distance_invalid_args():
@@ -130,6 +145,30 @@ def test_edit_distance_invalid_args():
         repmetric.edit_distance(["a"], "b")
     with pytest.raises(TypeError):
         repmetric.edit_distance("a")  # Missing b
+
+
+def test_edit_distance_bicped():
+    assert (
+        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend="python")
+        == 4
+    )
+
+
+def test_edit_distance_cped_bidirectional_requires_python_backend():
+    with pytest.raises(ValueError):
+        repmetric.edit_distance("a", "b", distance_type="bicped", backend="cpp")
+    with pytest.raises(ValueError):
+        repmetric.edit_distance(["a", "b"], distance_type="bicped", backend="cpp")
+
+
+def test_bicped_function():
+    assert repmetric.bicped("", "aaaba", backend="python") == 4
+
+
+def test_bicped_matrix_function():
+    sequences = ["a", "ab", "abc"]
+    expected = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
+    np.testing.assert_array_equal(repmetric.bicped_matrix(sequences), expected)
 
 
 # --- Fallback Mechanism Tests ---

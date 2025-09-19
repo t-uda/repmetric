@@ -6,6 +6,8 @@ from . import util
 from .api import (
     Backend,
     DistanceType,
+    bicped,
+    bicped_matrix,
     cped,
     cped_matrix,
     edit_distance,
@@ -17,7 +19,9 @@ from .backend import CPP_AVAILABLE
 __all__ = [
     "edit_distance",
     "cped",
+    "bicped",
     "cped_matrix",
+    "bicped_matrix",
     "levd",
     "levd_matrix",
     "Backend",
