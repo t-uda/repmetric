@@ -17,6 +17,14 @@ CPED_TEST_CASES = [
     ("axc", "abcabc", 2),
 ]
 
+BICPED_TEST_CASES = [
+    ("", "", 0),
+    ("", "aaaba", 4),
+    ("abcdef", "abcdef", 0),
+    ("abc", "ac", 1),
+    ("ab", "abab", 1),
+]
+
 LEVD_TEST_CASES = [
     ("kitten", "sitting", 3),
     ("saturday", "sunday", 3),
@@ -49,15 +57,25 @@ def test_cped_matrix_correctness(backend):
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
 
 
+@pytest.mark.parametrize("X, Y, expected", BICPED_TEST_CASES)
+@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
+def test_bicped_correctness(X, Y, expected, backend):
+    assert repmetric.bicped(X, Y, backend=backend) == expected
+
+
 def test_bicped_improvement():
     baseline = repmetric.edit_distance(
         "", "aaaba", distance_type="cped", backend="python"
     )
-    improved = repmetric.edit_distance(
+    improved_python = repmetric.edit_distance(
         "", "aaaba", distance_type="bicped", backend="python"
     )
-    assert baseline >= improved
-    assert improved == 4
+    improved_cpp = repmetric.edit_distance(
+        "", "aaaba", distance_type="bicped", backend="cpp"
+    )
+    assert baseline >= improved_python
+    assert improved_python == 4
+    assert improved_cpp == 4
 
 
 # --- Levenshtein Backend Correctness Tests ---
@@ -133,6 +151,18 @@ def test_edit_distance_matrix():
         expected_cped,
     )
     np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="bicped", backend="cpp", parallel=True
+        ),
+        expected_cped,
+    )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="bicped", backend="cpp", parallel=False
+        ),
+        expected_cped,
+    )
+    np.testing.assert_array_equal(
         repmetric.edit_distance(sequences, distance_type="bicped", backend="python"),
         expected_cped,
     )
@@ -147,28 +177,41 @@ def test_edit_distance_invalid_args():
         repmetric.edit_distance("a")  # Missing b
 
 
-def test_edit_distance_bicped():
+@pytest.mark.parametrize("backend", ["python", "cpp", "c++"])
+def test_edit_distance_bicped(backend):
     assert (
-        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend="python")
+        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend=backend)
         == 4
     )
 
 
-def test_edit_distance_cped_bidirectional_requires_python_backend():
+def test_edit_distance_bicped_invalid_backend():
     with pytest.raises(ValueError):
-        repmetric.edit_distance("a", "b", distance_type="bicped", backend="cpp")
+        repmetric.edit_distance("a", "b", distance_type="bicped", backend="rust")
     with pytest.raises(ValueError):
-        repmetric.edit_distance(["a", "b"], distance_type="bicped", backend="cpp")
+        repmetric.edit_distance(["a", "b"], distance_type="bicped", backend="rust")
 
 
 def test_bicped_function():
     assert repmetric.bicped("", "aaaba", backend="python") == 4
+    assert repmetric.bicped("", "aaaba", backend="cpp") == 4
 
 
 def test_bicped_matrix_function():
     sequences = ["a", "ab", "abc"]
     expected = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
-    np.testing.assert_array_equal(repmetric.bicped_matrix(sequences), expected)
+    np.testing.assert_array_equal(
+        repmetric.bicped_matrix(sequences, backend="python"), expected
+    )
+    np.testing.assert_array_equal(
+        repmetric.bicped_matrix(sequences, backend="cpp", parallel=True), expected
+    )
+    np.testing.assert_array_equal(
+        repmetric.bicped_matrix(sequences, backend="cpp", parallel=False), expected
+    )
+    np.testing.assert_array_equal(
+        repmetric.bicped_matrix(sequences, backend="c++", parallel=True), expected
+    )
 
 
 # --- Fallback Mechanism Tests ---
@@ -181,6 +224,20 @@ def test_fallback_to_python():
         result = repmetric.cped("a", "b", backend="cpp")
         mock_cped_py.assert_called_once_with("a", "b")
         assert result == 123
+
+    with patch("repmetric.api._calculate_bicped_py") as mock_bicped_py:
+        mock_bicped_py.return_value = 789
+        result = repmetric.bicped("a", "b", backend="cpp")
+        mock_bicped_py.assert_called_once_with("a", "b")
+        assert result == 789
+
+    with patch(
+        "repmetric.api._calculate_bicped_distance_matrix_py"
+    ) as mock_bicped_matrix_py:
+        mock_bicped_matrix_py.return_value = np.array([[0, 1], [1, 0]])
+        result = repmetric.bicped_matrix(["a", "b"], backend="cpp")
+        mock_bicped_matrix_py.assert_called_once_with(["a", "b"])
+        np.testing.assert_array_equal(result, mock_bicped_matrix_py.return_value)
 
     with patch("repmetric.api._calculate_levd_py") as mock_levd_py:
         mock_levd_py.return_value = 456
