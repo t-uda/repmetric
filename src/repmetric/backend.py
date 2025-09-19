@@ -65,39 +65,88 @@ repmetric_lib, CPP_AVAILABLE = _load_cpp_lib()
 
 def _calculate_cped_py(X: str, Y: str) -> int:
     """Calculate CPED using pure Python."""
+    dp = _compute_cped_dp_table(X, Y)
+    distance = int(dp[len(X)][len(Y)]) if dp[len(X)][len(Y)] != float("inf") else -1
+    return distance
+
+
+def _compute_cped_dp_table(X: str, Y: str, max_copy_len: int = 20) -> List[List[float]]:
+    """Return the DP table for the forward CPED approximation."""
+
     n = len(X)
     m = len(Y)
     dp: List[List[float]] = [[float("inf")] * (m + 1) for _ in range(n + 1)]
     dp[0][0] = 0.0
+
     col_mins: List[float] = [float("inf")] * (m + 1)
     col_mins[0] = 1.0
 
     for i in range(n + 1):
         for j in range(m + 1):
             if i == 0 and j == 0:
+                col_mins[j] = min(col_mins[j], dp[i][j] + 1.0)
                 continue
             current_min = float("inf")
             if i > 0 and j > 0:
                 cost = 0.0 if X[i - 1] == Y[j - 1] else 1.0
                 current_min = min(current_min, dp[i - 1][j - 1] + cost)
             if j > 0:
-                current_min = min(current_min, dp[i][j - 1] + 1)
+                current_min = min(current_min, dp[i][j - 1] + 1.0)
             if i > 0:
                 current_min = min(current_min, col_mins[j])
             if j > 1:
-                max_len = min(j // 2, 20)
+                max_len = min(j // 2, max_copy_len)
                 for length in range(max_len, 0, -1):
                     substring = Y[j - length : j]
-                    search_space = Y[0 : j - length]
-                    if substring in search_space:
+                    if substring and substring in Y[0 : j - length]:
                         cost = dp[i][j - length] + 1.0
                         if cost < current_min:
                             current_min = cost
             dp[i][j] = current_min
             col_mins[j] = min(col_mins[j], dp[i][j] + 1.0)
 
-    distance = int(dp[n][m]) if dp[n][m] != float("inf") else -1
-    return distance
+    return dp
+
+
+def _calculate_cped_py_bidirectional(X: str, Y: str) -> int:
+    """Calculate CPED using a bidirectional refinement of the DP approximation."""
+
+    max_copy_len = 20
+    forward_dp = _compute_cped_dp_table(X, Y, max_copy_len=max_copy_len)
+    reverse_dp = _compute_cped_dp_table(X[::-1], Y[::-1], max_copy_len=max_copy_len)
+
+    n = len(X)
+    m = len(Y)
+
+    backward_dp: List[List[float]] = [[float("inf")] * (m + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        for j in range(m + 1):
+            backward_dp[i][j] = reverse_dp[n - i][m - j]
+
+    best = forward_dp[n][m]
+
+    future_repeats: List[List[int]] = [[] for _ in range(m + 1)]
+    for j in range(m):
+        limit = min(m - j, max_copy_len)
+        for length in range(1, limit + 1):
+            substring = Y[j : j + length]
+            if substring and Y.find(substring, j + 1) != -1:
+                future_repeats[j].append(length)
+
+    for i in range(n + 1):
+        for j in range(m + 1):
+            if forward_dp[i][j] == float("inf"):
+                continue
+            for length in future_repeats[j]:
+                if j + length > m:
+                    continue
+                if backward_dp[i][j + length] <= float(length):
+                    continue
+                candidate = forward_dp[i][j] + 1.0 + backward_dp[i][j + length]
+                if candidate < best:
+                    best = candidate
+
+    return int(best) if best != float("inf") else -1
 
 
 def _calculate_cped_cpp(X: str, Y: str) -> int:
@@ -116,6 +165,21 @@ def _calculate_cped_distance_matrix_py(sequences: List[str]) -> np.ndarray:
     for i in range(n):
         for j in range(n):
             dist_matrix[i, j] = _calculate_cped_py(sequences[i], sequences[j])
+    return dist_matrix
+
+
+def _calculate_cped_distance_matrix_py_bidirectional(
+    sequences: List[str],
+) -> np.ndarray:
+    """Calculate the pairwise CPED matrix using the bidirectional approximation."""
+
+    n = len(sequences)
+    dist_matrix = np.zeros((n, n), dtype=np.int32)
+    for i in range(n):
+        for j in range(n):
+            dist_matrix[i, j] = _calculate_cped_py_bidirectional(
+                sequences[i], sequences[j]
+            )
     return dist_matrix
 
 

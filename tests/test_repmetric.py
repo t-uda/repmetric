@@ -49,6 +49,17 @@ def test_cped_matrix_correctness(backend):
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
 
 
+def test_cped_bidirectional_improvement():
+    baseline = repmetric.edit_distance(
+        "", "aaaba", distance_type="cped", backend="python"
+    )
+    improved = repmetric.edit_distance(
+        "", "aaaba", distance_type="cped-bidir", backend="python"
+    )
+    assert baseline >= improved
+    assert improved == 4
+
+
 # --- Levenshtein Backend Correctness Tests ---
 
 
@@ -121,6 +132,12 @@ def test_edit_distance_matrix():
         repmetric.edit_distance(sequences, distance_type="cped", backend="python"),
         expected_cped,
     )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="cped-bidir", backend="python"
+        ),
+        expected_cped,
+    )
 
 
 def test_edit_distance_invalid_args():
@@ -130,6 +147,26 @@ def test_edit_distance_invalid_args():
         repmetric.edit_distance(["a"], "b")
     with pytest.raises(TypeError):
         repmetric.edit_distance("a")  # Missing b
+
+
+@pytest.mark.parametrize(
+    "distance_type",
+    ["cped-bidir", "cped_bidirectional", "cped-bidirectional"],
+)
+def test_edit_distance_cped_bidirectional_aliases(distance_type):
+    assert (
+        repmetric.edit_distance(
+            "", "aaaba", distance_type=distance_type, backend="python"
+        )
+        == 4
+    )
+
+
+def test_edit_distance_cped_bidirectional_requires_python_backend():
+    with pytest.raises(ValueError):
+        repmetric.edit_distance("a", "b", distance_type="cped-bidir", backend="cpp")
+    with pytest.raises(ValueError):
+        repmetric.edit_distance(["a", "b"], distance_type="cped-bidir", backend="cpp")
 
 
 # --- Fallback Mechanism Tests ---
