@@ -2,7 +2,11 @@ from setuptools import setup, Extension, find_packages
 
 repmetric_ext = Extension(
     "repmetric._cpp",
-    sources=["src/repmetric/cped.cpp", "src/repmetric/levd.cpp"],
+    sources=[
+        "src/repmetric/cped.cpp",
+        "src/repmetric/levd.cpp",
+        "src/repmetric/bicped.cpp",
+    ],
     extra_compile_args=["-O3", "-std=c++17"],
 )
 

@@ -49,12 +49,13 @@ def test_cped_matrix_correctness(backend):
     np.testing.assert_array_equal(dist_matrix, expected_matrix)
 
 
-def test_bicped_improvement():
+@pytest.mark.parametrize("backend", ["python", "cpp"])
+def test_bicped_improvement(backend):
     baseline = repmetric.edit_distance(
-        "", "aaaba", distance_type="cped", backend="python"
+        "", "aaaba", distance_type="cped", backend=backend
     )
     improved = repmetric.edit_distance(
-        "", "aaaba", distance_type="bicped", backend="python"
+        "", "aaaba", distance_type="bicped", backend=backend
     )
     assert baseline >= improved
     assert improved == 4
@@ -147,28 +148,36 @@ def test_edit_distance_invalid_args():
         repmetric.edit_distance("a")  # Missing b
 
 
-def test_edit_distance_bicped():
+@pytest.mark.parametrize("backend", ["python", "cpp"])
+def test_edit_distance_bicped(backend):
     assert (
-        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend="python")
+        repmetric.edit_distance("", "aaaba", distance_type="bicped", backend=backend)
         == 4
     )
 
 
-def test_edit_distance_cped_bidirectional_requires_python_backend():
-    with pytest.raises(ValueError):
+def test_edit_distance_bicped_cpp_backend():
+    # Test that the C++ backend for bicped can be called without raising an error.
+    # Correctness is checked in other tests.
+    try:
         repmetric.edit_distance("a", "b", distance_type="bicped", backend="cpp")
-    with pytest.raises(ValueError):
         repmetric.edit_distance(["a", "b"], distance_type="bicped", backend="cpp")
+    except ValueError:
+        pytest.fail("Calling bicped with cpp backend should not raise a ValueError.")
 
 
-def test_bicped_function():
-    assert repmetric.bicped("", "aaaba", backend="python") == 4
+@pytest.mark.parametrize("backend", ["python", "cpp"])
+def test_bicped_function(backend):
+    assert repmetric.bicped("", "aaaba", backend=backend) == 4
 
 
-def test_bicped_matrix_function():
+@pytest.mark.parametrize("backend", ["python", "cpp"])
+def test_bicped_matrix_function(backend):
     sequences = ["a", "ab", "abc"]
     expected = np.array([[0, 1, 2], [1, 0, 1], [1, 1, 0]])
-    np.testing.assert_array_equal(repmetric.bicped_matrix(sequences), expected)
+    np.testing.assert_array_equal(
+        repmetric.bicped_matrix(sequences, backend=backend), expected
+    )
 
 
 # --- Fallback Mechanism Tests ---

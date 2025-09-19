@@ -52,6 +52,20 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
         ]
         repmetric_lib.calculate_levd_distance_matrix_cpp_int.restype = None
 
+        # BICPED functions
+        repmetric_lib.calculate_bicped_cpp_int.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+        ]
+        repmetric_lib.calculate_bicped_cpp_int.restype = ctypes.c_int
+        repmetric_lib.calculate_bicped_distance_matrix_cpp_int.argtypes = [
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.c_int,
+            np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+            ctypes.c_bool,
+        ]
+        repmetric_lib.calculate_bicped_distance_matrix_cpp_int.restype = None
+
         return repmetric_lib, True
     except (OSError, AttributeError):
         return None, False
@@ -193,6 +207,32 @@ def _calculate_cped_distance_matrix_cpp(
     seq_array[:] = encoded_seqs  # type: ignore
     dist_matrix = np.zeros((n, n), dtype=np.int32)
     repmetric_lib.calculate_cped_distance_matrix_cpp_int(
+        seq_array, n, dist_matrix, parallel
+    )
+    return dist_matrix
+
+
+def _calculate_bicped_cpp(X: str, Y: str) -> int:
+    """Wrapper for the C++ BICPed calculation."""
+    if not repmetric_lib:
+        raise RuntimeError("C++ library not available.")
+    X_bytes = X.encode("utf-8")
+    Y_bytes = Y.encode("utf-8")
+    return repmetric_lib.calculate_bicped_cpp_int(X_bytes, Y_bytes)
+
+
+def _calculate_bicped_distance_matrix_cpp(
+    sequences: List[str], parallel: bool
+) -> np.ndarray:
+    """Calculate the pairwise BICPed matrix using C++."""
+    if not repmetric_lib:
+        raise RuntimeError("C++ library not available.")
+    n = len(sequences)
+    seq_array = (ctypes.c_char_p * n)()
+    encoded_seqs = [s.encode("utf-8") for s in sequences]
+    seq_array[:] = encoded_seqs  # type: ignore
+    dist_matrix = np.zeros((n, n), dtype=np.int32)
+    repmetric_lib.calculate_bicped_distance_matrix_cpp_int(
         seq_array, n, dist_matrix, parallel
     )
     return dist_matrix
