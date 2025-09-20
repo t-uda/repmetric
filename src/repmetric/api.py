@@ -141,7 +141,7 @@ def edit_distance(
         distance_type: The type of distance to calculate.
             Supported values are 'cped', 'levd', and 'bicped' (the
             bidirectional CPED approximation).
-        backend: The backend to use for calculation ('cpp', 'python').
+        backend: The backend to use for calculation ('cpp', 'c++', 'python').
         parallel: Whether to use parallel computation for the distance matrix.
 
     Returns:
