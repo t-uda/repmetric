@@ -249,7 +249,6 @@ void calculate_cped_distance_matrix_cpp_int(const char **sequences, int n,
   } else {
     worker(0, 1); // Sequential execution
   }
-  worker(0, 1); // Sequential execution
 }
 
 // Geodesic calculation

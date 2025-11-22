@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Literal, Union, overload
+from typing import List, Literal, Tuple, Union, overload
 
 import numpy as np
 
@@ -18,7 +18,6 @@ from .backend import (
     _calculate_cped_py,
     _calculate_levd_cpp,
     _calculate_levd_distance_matrix_cpp,
-    _calculate_levd_distance_matrix_py,
     _calculate_levd_distance_matrix_py,
     _calculate_levd_py,
     _calculate_levd_geodesic_cpp,
@@ -46,7 +45,9 @@ def cped(
                 return _calculate_cped_geodesic_cpp(X, Y)
             return _calculate_cped_cpp(X, Y)
         if geodesic:
-            raise NotImplementedError("Geodesic calculation for CPED requires C++ backend.")
+            raise NotImplementedError(
+                "Geodesic calculation for CPED requires C++ backend."
+            )
         return _calculate_cped_py(X, Y)
     if backend_lower == "python":
         return _calculate_cped_py(X, Y)
@@ -105,12 +106,13 @@ def levd(
         if geodesic:
             return _calculate_levd_geodesic_cpp(s1, s2)
         return _calculate_levd_cpp(s1, s2)
-    
+
     if geodesic:
         # Fallback or raise error if python version not implemented
         from .backend import _calculate_levd_geodesic_py
+
         return _calculate_levd_geodesic_py(s1, s2)
-        
+
     return _calculate_levd_py(s1, s2)
 
 

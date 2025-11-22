@@ -22,7 +22,7 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
     lib_paths = glob.glob(os.path.join(os.path.dirname(__file__), "_cpp.*.so"))
     if not lib_paths:
         lib_paths = glob.glob(os.path.join(os.path.dirname(__file__), "_cpp.so"))
-    
+
     if not lib_paths:
         return None, False
 
@@ -42,7 +42,7 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
             ctypes.c_bool,
         ]
         repmetric_lib.calculate_cped_distance_matrix_cpp_int.restype = None
-        
+
         # CPED Geodesic
         repmetric_lib.calculate_cped_geodesic_cpp.argtypes = [
             ctypes.c_char_p,
@@ -79,7 +79,7 @@ def _load_cpp_lib() -> Tuple[Optional[ctypes.CDLL], bool]:
             ctypes.c_bool,
         ]
         repmetric_lib.calculate_levd_distance_matrix_cpp_int.restype = None
-        
+
         # Levenshtein Geodesic
         repmetric_lib.calculate_levd_geodesic_cpp.argtypes = [
             ctypes.c_char_p,
@@ -204,25 +204,25 @@ def _calculate_cped_cpp(X: str, Y: str) -> int:
     return repmetric_lib.calculate_cped_cpp_int(X_bytes, Y_bytes)
 
 
-def _calculate_cped_geodesic_cpp(X: str, Y: str) -> Tuple[int, List[str]]:
+def _calculate_cped_geodesic_cpp(X: str, Y: str) -> Tuple[int, GeodesicPath]:
     """Wrapper for the C++ CPED geodesic calculation."""
     if not repmetric_lib:
         raise RuntimeError("C++ library not available.")
     X_bytes = X.encode("utf-8")
     Y_bytes = Y.encode("utf-8")
-    
+
     # Max path length is bounded, but could be large.
     # n + m is a safe upper bound for simple edits, but with copy/delete it could be less.
     # However, the string representation "C:100" takes more space.
     # Let's allocate a generous buffer.
     max_len = (len(X) + len(Y)) * 10 + 1024
     buffer = ctypes.create_string_buffer(max_len)
-    
+
     dist = repmetric_lib.calculate_cped_geodesic_cpp(X_bytes, Y_bytes, buffer, max_len)
-    
+
     if dist == -1:
         raise RuntimeError("Buffer too small for geodesic path.")
-        
+
     path_str = buffer.value.decode("utf-8")
     if not path_str:
         return dist, GeodesicPath(X, Y, [], dist)
@@ -316,17 +316,17 @@ def _calculate_levd_geodesic_py(s1: str, s2: str) -> Tuple[int, GeodesicPath]:
     """Calculate Levenshtein geodesic using pure Python."""
     n, m = len(s1), len(s2)
     dp = [[0] * (m + 1) for _ in range(n + 1)]
-    
+
     for i in range(n + 1):
         dp[i][0] = i
     for j in range(m + 1):
         dp[0][j] = j
-        
+
     for i in range(1, n + 1):
         for j in range(1, m + 1):
             cost = 0 if s1[i - 1] == s2[j - 1] else 1
             dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
-            
+
     path = []
     i, j = n, m
     while i > 0 or j > 0:
@@ -345,7 +345,7 @@ def _calculate_levd_geodesic_py(s1: str, s2: str) -> Tuple[int, GeodesicPath]:
             path.append("I")
             j -= 1
             continue
-            
+
     return dp[n][m], GeodesicPath(s1, s2, path[::-1], dp[n][m])
 
 
@@ -364,16 +364,18 @@ def _calculate_levd_geodesic_cpp(s1: str, s2: str) -> Tuple[int, GeodesicPath]:
         raise RuntimeError("C++ library not available.")
     s1_bytes = s1.encode("utf-8")
     s2_bytes = s2.encode("utf-8")
-    
+
     # Max path length is n + m
     max_len = len(s1) + len(s2) + 1
     buffer = ctypes.create_string_buffer(max_len)
-    
-    dist = repmetric_lib.calculate_levd_geodesic_cpp(s1_bytes, s2_bytes, buffer, max_len)
-    
+
+    dist = repmetric_lib.calculate_levd_geodesic_cpp(
+        s1_bytes, s2_bytes, buffer, max_len
+    )
+
     if dist == -1:
         raise RuntimeError("Buffer too small for geodesic path.")
-        
+
     path_str = buffer.value.decode("utf-8")
     # Parse path string "M,S,I,D" -> ["M", "S", "I", "D"]
     # Actually the C++ implementation returns "MSID" without commas?
@@ -382,7 +384,7 @@ def _calculate_levd_geodesic_cpp(s1: str, s2: str) -> Tuple[int, GeodesicPath]:
     # path += 'D';
     # path += 'I';
     # So it returns a string like "MMID".
-    
+
     return dist, GeodesicPath(s1, s2, list(path_str), dist)
 
 
