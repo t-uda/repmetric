@@ -36,7 +36,27 @@ DistanceType = Literal[
 def cped(
     X: str, Y: str, backend: Backend = "cpp", geodesic: bool = False
 ) -> Union[int, Tuple[int, GeodesicPath]]:
-    """Calculate the Copy & Paste Edit Distance (CPED)."""
+    """Compute the Copy & Paste Edit Distance (CPED) between two strings.
+
+    Args:
+        X: The source string.
+        Y: The target string.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. ``"python"`` forces
+            the pure Python implementation.
+        geodesic: If True, returns a tuple of (distance, GeodesicPath) containing
+            the edit distance and the geodesic path. If False, returns only the
+            distance.
+
+    Returns:
+        The CPED between ``X`` and ``Y`` if geodesic is False, or a tuple of
+        (distance, GeodesicPath) if geodesic is True.
+
+    Raises:
+        ValueError: If an unknown backend name is provided.
+        NotImplementedError: If geodesic is True but C++ backend is not available.
+    """
 
     backend_lower = backend.lower()
     if backend_lower in ("cpp", "c++"):
@@ -55,7 +75,22 @@ def cped(
 
 
 def bicped(X: str, Y: str, backend: Backend = "cpp") -> int:
-    """Calculate the bidirectional CPED approximation (BICPed)."""
+    """Compute the bidirectional CPED approximation (BICPed).
+
+    Args:
+        X: The source string.
+        Y: The target string.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. ``"python"`` forces
+            the pure Python implementation.
+
+    Returns:
+        The BICPed distance between ``X`` and ``Y``.
+
+    Raises:
+        ValueError: If an unknown backend name is provided.
+    """
 
     backend_lower = backend.lower()
     if backend_lower in ("cpp", "c++"):
@@ -70,7 +105,23 @@ def bicped(X: str, Y: str, backend: Backend = "cpp") -> int:
 def cped_matrix(
     sequences: List[str], backend: Backend = "cpp", parallel: bool = True
 ) -> np.ndarray:
-    """Calculate the pairwise CPED matrix."""
+    """Compute the pairwise CPED matrix for a collection of strings.
+
+    Args:
+        sequences: Strings for which to calculate the pairwise distances.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. ``"python"`` forces
+            the pure Python implementation.
+        parallel: When ``True`` (default) and the C++ backend is available, the
+            distance matrix is computed in parallel.
+
+    Returns:
+        A square numpy array containing the CPED distances.
+
+    Raises:
+        ValueError: If an unknown backend name is provided.
+    """
 
     backend_lower = backend.lower()
     if backend_lower in ("cpp", "c++"):
@@ -85,7 +136,23 @@ def cped_matrix(
 def bicped_matrix(
     sequences: List[str], backend: Backend = "cpp", parallel: bool = True
 ) -> np.ndarray:
-    """Calculate the pairwise bidirectional CPED (BICPed) matrix."""
+    """Compute the pairwise bidirectional CPED (BICPed) distance matrix.
+
+    Args:
+        sequences: Strings for which to calculate the pairwise distances.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. ``"python"`` forces
+            the pure Python implementation.
+        parallel: When ``True`` (default) and the C++ backend is available, the
+            distance matrix is computed in parallel.
+
+    Returns:
+        A square numpy array containing the BICPed distances.
+
+    Raises:
+        ValueError: If an unknown backend name is provided.
+    """
 
     backend_lower = backend.lower()
     if backend_lower in ("cpp", "c++"):
@@ -100,7 +167,23 @@ def bicped_matrix(
 def levd(
     s1: str, s2: str, backend: Backend = "cpp", geodesic: bool = False
 ) -> Union[int, Tuple[int, GeodesicPath]]:
-    """Calculate the Levenshtein Distance."""
+    """Compute the Levenshtein distance between two strings.
+
+    Args:
+        s1: The source string.
+        s2: The target string.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. Any other value
+            selects the pure Python implementation.
+        geodesic: If True, returns a tuple of (distance, GeodesicPath) containing
+            the edit distance and the geodesic path. If False, returns only the
+            distance.
+
+    Returns:
+        The Levenshtein distance between ``s1`` and ``s2`` if geodesic is False,
+        or a tuple of (distance, GeodesicPath) if geodesic is True.
+    """
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
         if geodesic:
@@ -119,7 +202,20 @@ def levd(
 def levd_matrix(
     sequences: List[str], backend: Backend = "cpp", parallel: bool = True
 ) -> np.ndarray:
-    """Calculate the pairwise Levenshtein distance matrix."""
+    """Compute the pairwise Levenshtein distance matrix.
+
+    Args:
+        sequences: Strings for which to calculate the pairwise distances.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. Any other value
+            selects the pure Python implementation.
+        parallel: When ``True`` (default) and the C++ backend is available, the
+            distance matrix is computed in parallel.
+
+    Returns:
+        A square numpy array containing the Levenshtein distances.
+    """
     use_cpp = backend in ("cpp", "c++") and CPP_AVAILABLE
     if use_cpp:
         return _calculate_levd_distance_matrix_cpp(sequences, parallel=parallel)
@@ -155,21 +251,38 @@ def edit_distance(
     parallel: bool = True,
     geodesic: bool = False,
 ) -> Union[int, np.ndarray, Tuple[int, GeodesicPath]]:
-    """
-    Calculates the edit distance between two strings or a matrix of distances
-    for a list of strings.
+    """Compute an edit distance or a distance matrix for the provided input.
+
+    This helper routes to :func:`cped`, :func:`levd`, :func:`bicped`, and their
+    corresponding matrix functions based on the input type and the
+    ``distance_type`` argument.
 
     Args:
-        a: The first string or a list of strings.
-        b: The second string. If 'a' is a list, this should be None.
-        distance_type: The type of distance to calculate.
-            Supported values are 'cped', 'levd', and 'bicped' (the
-            bidirectional CPED approximation).
-        backend: The backend to use for calculation ('cpp', 'python').
-        parallel: Whether to use parallel computation for the distance matrix.
+        a: Either the first string to compare or a list of strings for a
+            distance matrix.
+        b: The second string to compare. Must be ``None`` when ``a`` is a list.
+        distance_type: Which edit distance variant to compute. Accepted values
+            are ``"cped"``, ``"levd"``, and ``"bicped"``.
+        backend: Execution backend. ``"cpp"`` (default) attempts to use the
+            compiled implementation and falls back to the Python
+            implementation if the extension is unavailable. ``"python"`` forces
+            the pure Python implementation.
+        parallel: When ``True`` (default) and a C++ backend matrix routine is
+            available, compute the matrix in parallel.
+        geodesic: If True, returns a tuple of (distance, GeodesicPath) when
+            computing distance between two strings. Only supported for ``"cped"``
+            and ``"levd"`` distance types. Ignored when computing distance matrices.
 
     Returns:
-        The edit distance as an integer, or a numpy array distance matrix.
+        An integer when both ``a`` and ``b`` are strings and geodesic is False,
+        a tuple of (distance, GeodesicPath) when both are strings and geodesic is True,
+        or a numpy array containing the pairwise distances for ``a`` when ``a`` is a list.
+
+    Raises:
+        TypeError: If the combination of ``a`` and ``b`` is invalid.
+        ValueError: If ``distance_type`` is unknown or the selected backend
+            rejects the provided backend name.
+        NotImplementedError: If geodesic is True for ``"bicped"`` distance type.
     """
     if isinstance(a, list):
         if b is not None:

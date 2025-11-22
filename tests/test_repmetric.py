@@ -245,6 +245,24 @@ def test_fallback_to_python():
         mock_levd_py.assert_called_once_with("x", "y")
         assert result == 456
 
+    with patch(
+        "repmetric.api._calculate_cped_distance_matrix_py"
+    ) as mock_cped_matrix_py:
+        mock_cped_matrix_py.return_value = np.array([[0, 2], [1, 0]])
+        sequences = ["foo", "bar"]
+        result = repmetric.cped_matrix(sequences, backend="cpp")
+        mock_cped_matrix_py.assert_called_once_with(sequences)
+        np.testing.assert_array_equal(result, mock_cped_matrix_py.return_value)
+
+    with patch(
+        "repmetric.api._calculate_levd_distance_matrix_py"
+    ) as mock_levd_matrix_py:
+        mock_levd_matrix_py.return_value = np.array([[0, 3], [3, 0]])
+        sequences = ["alpha", "beta"]
+        result = repmetric.levd_matrix(sequences, backend="cpp")
+        mock_levd_matrix_py.assert_called_once_with(sequences)
+        np.testing.assert_array_equal(result, mock_levd_matrix_py.return_value)
+
 
 # --- Axiom/Property Tests ---
 
