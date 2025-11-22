@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include <thread>
+#include <cstring> // for strcpy
 
 // --- Template-based Core Implementation for Levenshtein Distance ---
 
@@ -32,6 +33,48 @@ T _calculate_levd_template(const std::string& s1, const std::string& s2) {
     }
 
     return p[m];
+}
+
+std::pair<int, std::string> _calculate_levd_geodesic_impl(const std::string& s1, const std::string& s2) {
+    const size_t n = s1.length();
+    const size_t m = s2.length();
+
+    std::vector<std::vector<int>> dp(n + 1, std::vector<int>(m + 1));
+
+    for (size_t i = 0; i <= n; ++i) dp[i][0] = i;
+    for (size_t j = 0; j <= m; ++j) dp[0][j] = j;
+
+    for (size_t i = 1; i <= n; ++i) {
+        for (size_t j = 1; j <= m; ++j) {
+            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            dp[i][j] = std::min({dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost});
+        }
+    }
+
+    std::string path;
+    size_t i = n, j = m;
+    while (i > 0 || j > 0) {
+        if (i > 0 && j > 0) {
+            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            if (dp[i][j] == dp[i - 1][j - 1] + cost) {
+                path += (cost == 0 ? 'M' : 'S'); // Match or Substitute
+                i--; j--;
+                continue;
+            }
+        }
+        if (i > 0 && dp[i][j] == dp[i - 1][j] + 1) {
+            path += 'D'; // Deletion
+            i--;
+            continue;
+        }
+        if (j > 0 && dp[i][j] == dp[i][j - 1] + 1) {
+            path += 'I'; // Insertion
+            j--;
+            continue;
+        }
+    }
+    std::reverse(path.begin(), path.end());
+    return {dp[n][m], path};
 }
 
 // --- C-style Interface for Python ---
@@ -75,8 +118,17 @@ extern "C" {
             for (auto& t : threads) {
                 t.join();
             }
-        } else {
             worker(0, 1); // Sequential execution
         }
+    }
+
+    // Geodesic calculation
+    int calculate_levd_geodesic_cpp(const char* s1_str, const char* s2_str, char* buffer, int buffer_len) {
+        std::pair<int, std::string> result = _calculate_levd_geodesic_impl(std::string(s1_str), std::string(s2_str));
+        if (result.second.length() >= static_cast<size_t>(buffer_len)) {
+            return -1; // Buffer too small
+        }
+        std::strcpy(buffer, result.second.c_str());
+        return result.first;
     }
 }
