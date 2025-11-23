@@ -1,6 +1,6 @@
 
 import numpy as np
-from repmetric.analysis import sliding_windows, calculate_maximal_bandwidth, MDS_OOS, augment_dataset, splength
+from repmetric.analysis import sliding_windows, calculate_maximal_bandwidth, MDS_OOS, augment_dataset, splength, compute_gw_distance
 
 
 def test_sliding_windows():
@@ -30,6 +30,20 @@ def test_splength():
     # splength calculates path from index 0 to last index
     dist = splength(mat)
     assert dist == 3.0
+
+
+def test_compute_gw_distance():
+    # Two identical matrices should have 0 GW distance
+    mat1 = np.array([[0, 1], [1, 0]])
+    mat2 = np.array([[0, 1], [1, 0]])
+    gw_dist = compute_gw_distance(mat1, mat2)
+    assert np.isclose(gw_dist, 0.0)
+
+    # Scaled matrix should have non-zero distance (unless scale invariant, but GW isn't by default)
+    mat3 = np.array([[0, 2], [2, 0]])
+    gw_dist_scaled = compute_gw_distance(mat1, mat3)
+    assert gw_dist_scaled > 0.0
+
 
 
 def test_mds_oos_synthetic():

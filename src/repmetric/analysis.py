@@ -10,6 +10,7 @@ from scipy.sparse.csgraph import dijkstra
 from sklearn.manifold import MDS
 from sklearn.base import BaseEstimator, TransformerMixin
 from repmetric.api import edit_distance
+import ot.gromov
 
 
 def sliding_windows(s: str, k: int, step: int = 1) -> Tuple[List[str], List[int]]:
@@ -236,3 +237,46 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
             X_embedded[i] = res.x
 
         return X_embedded
+
+
+def compute_gw_distance(
+    matrix_a: np.ndarray,
+    matrix_b: np.ndarray,
+    loss_fun: str = 'square_loss',
+    max_iter: int = 10000,
+    tol_rel: float = 1e-6,
+    tol_abs: float = 1e-6,
+    symmetric: bool = True
+) -> float:
+    """Calculates the Gromov-Wasserstein distance between two distance matrices.
+
+    Args:
+        matrix_a: First distance matrix (n x n).
+        matrix_b: Second distance matrix (m x m).
+        loss_fun: Loss function used for the GW distance.
+        max_iter: Maximum number of iterations.
+        tol_rel: Relative tolerance for convergence.
+        tol_abs: Absolute tolerance for convergence.
+        symmetric: Whether the matrices are symmetric.
+
+    Returns:
+        The Gromov-Wasserstein distance.
+    """
+    n_a = matrix_a.shape[0]
+    n_b = matrix_b.shape[0]
+    p_a = np.ones(n_a) / n_a
+    p_b = np.ones(n_b) / n_b
+
+    gw_config = dict(
+        armijo=True,
+        maxiter=max_iter,
+        tol_rel=tol_rel,
+        tol_abs=tol_abs,
+        loss_fun=loss_fun
+    )
+
+    return ot.gromov.gromov_wasserstein2(
+        matrix_a, matrix_b, p_a, p_b,
+        symmetric=symmetric, **gw_config
+    )
+
