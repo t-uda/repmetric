@@ -6,8 +6,10 @@ from typing import List, Tuple, Optional
 import numpy as np
 from scipy.stats import linregress
 from scipy.optimize import minimize
+from scipy.sparse.csgraph import dijkstra
 from sklearn.manifold import MDS
 from sklearn.base import BaseEstimator, TransformerMixin
+from repmetric.api import edit_distance
 
 
 def sliding_windows(s: str, k: int, step: int = 1) -> Tuple[List[str], List[int]]:
@@ -29,6 +31,60 @@ def sliding_windows(s: str, k: int, step: int = 1) -> Tuple[List[str], List[int]
         starts.append(i)
         i += step
     return subs, starts
+
+
+def splength(mat: np.ndarray) -> float:
+    """Calculates the shortest path length from start to end of the sequence graph.
+
+    Args:
+        mat: The distance matrix.
+
+    Returns:
+        The shortest path distance from the first to the last node.
+    """
+    directed = not np.allclose(mat, mat.T)
+    return dijkstra(
+        csgraph=mat,
+        directed=directed,
+        indices=0,
+        return_predecessors=False
+    )[-1]
+
+
+def augment_dataset(
+    target_sequences: List[Tuple[str, str]],
+    augment_a: int,
+    augment_b: int
+) -> List[Tuple[str, str]]:
+    """Augments the dataset using geodesic paths.
+
+    For each sequence, computes the CPED geodesic from empty string,
+    and extracts intermediate strings at specified intervals.
+    """
+    augmented = []
+    for gene_id, sequence in target_sequences:
+        # We assume sequence is just the string.
+        # edit_distance returns (dist, geodesic) when geodesic=True
+        res = edit_distance(
+            "", sequence, distance_type="cped", geodesic=True
+        )
+        if isinstance(res, tuple):
+             _, geodesic = res
+        else:
+             raise ValueError("Expected tuple from edit_distance with geodesic=True")
+
+        route = geodesic.get_path_strings()
+        n = len(route) - 1
+        
+        # Avoid division by zero if augment_b is 0, though unlikely
+        if augment_b == 0:
+            continue
+            
+        augmented.extend([
+            (f'{gene_id.strip()}_{k}_of_{augment_b}', route[(k * n) // augment_b])
+            for k in range(augment_a, augment_b + 1)
+        ])
+    return augmented
 
 
 def calculate_maximal_bandwidth(
