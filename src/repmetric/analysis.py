@@ -9,6 +9,7 @@ from scipy.optimize import minimize
 from sklearn.manifold import MDS
 from sklearn.base import BaseEstimator, TransformerMixin
 
+
 def sliding_windows(s: str, k: int, step: int = 1) -> Tuple[List[str], List[int]]:
     """Extracts sliding windows from a string.
 
@@ -55,18 +56,15 @@ def calculate_maximal_bandwidth(
 
     max_bw = 1
     slope = 0.0
-    
-    # Pre-calculate masks to avoid repeated work if possible, 
+
+    # Pre-calculate masks to avoid repeated work if possible,
     # but loop is fine for typical sizes.
     for k in bandwidths:
         mask = dists < k
         if np.sum(mask) < 2:
             continue
 
-        s, _, r_value, _, _ = linregress(
-            dists[mask],
-            values[mask]
-        )
+        s, _, r_value, _, _ = linregress(dists[mask], values[mask])
         r_squared = r_value**2
 
         if r_squared >= r2_thresh:
@@ -107,7 +105,7 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
         self.random_state = random_state
         self.dissimilarity = dissimilarity
-        
+
         self.mds_ = MDS(
             n_components=n_components,
             metric=metric,
@@ -119,8 +117,8 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
             random_state=random_state,
             dissimilarity=dissimilarity,
         )
-        self.embedding_ = None
-        self._X_fit = None
+        self.embedding_: Optional[np.ndarray] = None
+        self._X_fit: Optional[np.ndarray] = None
 
     def fit(self, X: np.ndarray, y=None):
         """Fit the MDS model to X.
@@ -129,7 +127,7 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
             X: Distance matrix (if dissimilarity='precomputed') or feature matrix.
         """
         self.embedding_ = self.mds_.fit_transform(X)
-        self._X_fit = X # Keep reference if needed, mainly we need embedding_
+        self._X_fit = X  # Keep reference if needed, mainly we need embedding_
         return self
 
     def fit_transform(self, X: np.ndarray, y=None):
@@ -164,13 +162,13 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
             # sum ( dist(x, y_j) - delta_j )^2
             # y_j are fixed landmarks (self.embedding_)
             # delta_j are input distances (X_new[i])
-            
+
             d_true = X_new[i]
 
             def stress(x):
                 # Calculate distances from x to all landmarks
                 d_est = np.linalg.norm(self.embedding_ - x, axis=1)
-                return np.sum((d_est - d_true)**2)
+                return np.sum((d_est - d_true) ** 2)
 
             # Initial guess: centroid of landmarks weighted by inverse distance?
             # Or just mean of landmarks.
@@ -178,7 +176,7 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
             closest_idx = np.argmin(d_true)
             x0 = self.embedding_[closest_idx]
 
-            res = minimize(stress, x0, method='BFGS')
+            res = minimize(stress, x0, method="BFGS")
             X_embedded[i] = res.x
 
         return X_embedded
