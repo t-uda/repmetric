@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <limits>
@@ -7,6 +9,33 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
+namespace {
+unsigned int resolve_num_threads() {
+  unsigned int num_threads = std::thread::hardware_concurrency();
+  if (num_threads == 0) {
+    num_threads = 1;
+  }
+
+  const char *env_value = std::getenv("REPMETRIC_NUM_THREADS");
+  if (!env_value || *env_value == '\0') {
+    return num_threads;
+  }
+
+  char *end = nullptr;
+  errno = 0;
+  long parsed = std::strtol(env_value, &end, 10);
+  if (errno == ERANGE || end == env_value || *end != '\0' || parsed <= 0) {
+    return num_threads;
+  }
+
+  if (parsed > static_cast<long>(num_threads)) {
+    return num_threads;
+  }
+
+  return static_cast<unsigned int>(parsed);
+}
+}  // namespace
 
 // --- Template-based Core Implementation ---
 
@@ -236,9 +265,7 @@ void calculate_cped_distance_matrix_cpp_int(const char **sequences, int n,
 
   if (parallel) {
     std::vector<std::thread> threads;
-    unsigned int num_threads = std::thread::hardware_concurrency();
-    if (num_threads == 0)
-      num_threads = 1;
+    unsigned int num_threads = resolve_num_threads();
     for (unsigned int i = 0; i < num_threads; ++i) {
       threads.emplace_back(worker, i, num_threads);
     }
