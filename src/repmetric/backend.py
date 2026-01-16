@@ -145,6 +145,96 @@ def _compute_cped_dp_table(X: str, Y: str, max_copy_len: int = 20) -> List[List[
     return dp
 
 
+def _calculate_cped_geodesic_py(X: str, Y: str) -> Tuple[int, GeodesicPath]:
+    """Calculate CPED geodesic using pure Python."""
+    n = len(X)
+    m = len(Y)
+    inf = 10**9
+
+    dp = [[inf] * (m + 1) for _ in range(n + 1)]
+    col_mins = [inf] * (m + 1)
+
+    dp[0][0] = 0
+    col_mins[0] = 1
+
+    for i in range(n + 1):
+        for j in range(m + 1):
+            if i == 0 and j == 0:
+                continue
+
+            current_min = inf
+            if i > 0 and j > 0:
+                cost = 0 if X[i - 1] == Y[j - 1] else 1
+                current_min = min(current_min, dp[i - 1][j - 1] + cost)
+            if j > 0:
+                current_min = min(current_min, dp[i][j - 1] + 1)
+            if i > 0:
+                current_min = min(current_min, col_mins[j])
+            if j > 1:
+                max_len = min(j // 2, 20)
+                for length in range(max_len, 0, -1):
+                    substring = Y[j - length : j]
+                    if substring and substring in Y[: j - length]:
+                        cost = dp[i][j - length] + 1
+                        if cost < current_min:
+                            current_min = cost
+
+            dp[i][j] = current_min
+            col_mins[j] = min(col_mins[j], dp[i][j] + 1)
+
+    distance = dp[n][m]
+    if distance >= inf:
+        return -1, GeodesicPath(X, Y, [], -1)
+
+    path_ops = []
+    i, j = n, m
+    while i > 0 or j > 0:
+        current_val = dp[i][j]
+
+        if i > 0 and j > 0:
+            cost = 0 if X[i - 1] == Y[j - 1] else 1
+            if current_val == dp[i - 1][j - 1] + cost:
+                path_ops.append("M" if cost == 0 else "S")
+                i -= 1
+                j -= 1
+                continue
+
+        if j > 0 and current_val == dp[i][j - 1] + 1:
+            path_ops.append("I")
+            j -= 1
+            continue
+
+        found_copy = False
+        if j > 1:
+            max_len = min(j // 2, 20)
+            for length in range(max_len, 0, -1):
+                substring = Y[j - length : j]
+                if substring and substring in Y[: j - length]:
+                    if current_val == dp[i][j - length] + 1:
+                        path_ops.append(f"C:{length}")
+                        j -= length
+                        found_copy = True
+                        break
+        if found_copy:
+            continue
+
+        if i > 0:
+            found_delete = False
+            for k in range(i):
+                if dp[k][j] + 1 == current_val:
+                    path_ops.append(f"D:{i - k}")
+                    i = k
+                    found_delete = True
+                    break
+            if found_delete:
+                continue
+
+        break
+
+    path_ops.reverse()
+    return distance, GeodesicPath(X, Y, path_ops, distance)
+
+
 def _calculate_bicped_py(X: str, Y: str) -> int:
     """Calculate CPED using the bidirectional (BICPed) DP refinement."""
 

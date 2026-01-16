@@ -1,6 +1,5 @@
-
 import numpy as np
-from repmetric.analysis import sliding_windows, calculate_maximal_bandwidth, MDS_OOS, augment_dataset, splength, compute_gw_distance
+from repmetric.analysis import sliding_windows, MDS_OOS, splength, compute_gw_distance
 
 
 def test_sliding_windows():
@@ -22,11 +21,7 @@ def test_splength():
     # Simple 3-node graph: 0 -> 1 -> 2
     # Distances: (0,1)=1, (1,2)=2, (0,2)=10 (direct edge is longer)
     # Shortest path 0->2 should be 1+2=3
-    mat = np.array([
-        [0, 1, 10],
-        [1, 0, 2],
-        [10, 2, 0]
-    ])
+    mat = np.array([[0, 1, 10], [1, 0, 2], [10, 2, 0]])
     # splength calculates path from index 0 to last index
     dist = splength(mat)
     assert dist == 3.0
@@ -43,7 +38,6 @@ def test_compute_gw_distance():
     mat3 = np.array([[0, 2], [2, 0]])
     gw_dist_scaled = compute_gw_distance(mat1, mat3)
     assert gw_dist_scaled > 0.0
-
 
 
 def test_mds_oos_synthetic():

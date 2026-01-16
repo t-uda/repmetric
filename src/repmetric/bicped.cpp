@@ -1,5 +1,7 @@
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <string>
 #include <string_view>
@@ -7,6 +9,31 @@
 #include <vector>
 
 namespace {
+
+unsigned int resolve_num_threads() {
+    unsigned int num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0) {
+        num_threads = 1;
+    }
+
+    const char* env_value = std::getenv("REPMETRIC_NUM_THREADS");
+    if (!env_value || *env_value == '\0') {
+        return num_threads;
+    }
+
+    char* end = nullptr;
+    errno = 0;
+    long parsed = std::strtol(env_value, &end, 10);
+    if (errno == ERANGE || end == env_value || *end != '\0' || parsed <= 0) {
+        return num_threads;
+    }
+
+    if (parsed > static_cast<long>(num_threads)) {
+        return num_threads;
+    }
+
+    return static_cast<unsigned int>(parsed);
+}
 
 class DPTable {
    public:
@@ -164,10 +191,7 @@ void calculate_bicped_distance_matrix_cpp_int(const char** sequences,
     };
 
     if (parallel) {
-        unsigned int num_threads = std::thread::hardware_concurrency();
-        if (num_threads == 0) {
-            num_threads = 1;
-        }
+        unsigned int num_threads = resolve_num_threads();
         std::vector<std::thread> threads;
         threads.reserve(num_threads);
         for (unsigned int i = 0; i < num_threads; ++i) {
@@ -182,4 +206,3 @@ void calculate_bicped_distance_matrix_cpp_int(const char** sequences,
 }
 
 }
-

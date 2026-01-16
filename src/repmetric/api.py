@@ -15,6 +15,7 @@ from .backend import (
     _calculate_cped_cpp,
     _calculate_cped_distance_matrix_cpp,
     _calculate_cped_distance_matrix_py,
+    _calculate_cped_geodesic_py,
     _calculate_cped_py,
     _calculate_levd_cpp,
     _calculate_levd_distance_matrix_cpp,
@@ -55,7 +56,6 @@ def cped(
 
     Raises:
         ValueError: If an unknown backend name is provided.
-        NotImplementedError: If geodesic is True but C++ backend is not available.
     """
 
     backend_lower = backend.lower()
@@ -65,11 +65,11 @@ def cped(
                 return _calculate_cped_geodesic_cpp(X, Y)
             return _calculate_cped_cpp(X, Y)
         if geodesic:
-            raise NotImplementedError(
-                "Geodesic calculation for CPED requires C++ backend."
-            )
+            return _calculate_cped_geodesic_py(X, Y)
         return _calculate_cped_py(X, Y)
     if backend_lower == "python":
+        if geodesic:
+            return _calculate_cped_geodesic_py(X, Y)
         return _calculate_cped_py(X, Y)
     raise ValueError(f"Unknown backend: {backend}")
 

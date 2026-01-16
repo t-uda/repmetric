@@ -1,0 +1,19 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%files
+    pyproject.toml /opt/repmetric/pyproject.toml
+    setup.py /opt/repmetric/setup.py
+    README.md /opt/repmetric/README.md
+    LICENSE /opt/repmetric/LICENSE
+    src /opt/repmetric/src
+
+%post
+    set -eux
+    apt-get update
+    apt-get install -y --no-install-recommends build-essential
+    python -m pip wheel /opt/repmetric --no-deps -w /tmp/wheels
+    WHEEL_FILE=$(ls /tmp/wheels/repmetric-*.whl)
+    python -m pip install --no-cache-dir "${WHEEL_FILE}[analysis,plotting]"
+    apt-get purge -y --auto-remove build-essential
+    rm -rf /var/lib/apt/lists/* /tmp/wheels

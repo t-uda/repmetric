@@ -1,4 +1,4 @@
-from setuptools import setup, Extension, find_packages
+from setuptools import Extension, setup
 
 repmetric_ext = Extension(
     "repmetric._cpp",
@@ -11,10 +11,5 @@ repmetric_ext = Extension(
 )
 
 setup(
-    name="repmetric",
-    version="0.1.0",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
     ext_modules=[repmetric_ext],
-    zip_safe=False,
 )
