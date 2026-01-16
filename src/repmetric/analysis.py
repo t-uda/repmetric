@@ -45,17 +45,12 @@ def splength(mat: np.ndarray) -> float:
     """
     directed = not np.allclose(mat, mat.T)
     return dijkstra(
-        csgraph=mat,
-        directed=directed,
-        indices=0,
-        return_predecessors=False
+        csgraph=mat, directed=directed, indices=0, return_predecessors=False
     )[-1]
 
 
 def augment_dataset(
-    target_sequences: List[Tuple[str, str]],
-    augment_a: int,
-    augment_b: int
+    target_sequences: List[Tuple[str, str]], augment_a: int, augment_b: int
 ) -> List[Tuple[str, str]]:
     """Augments the dataset using geodesic paths.
 
@@ -66,25 +61,25 @@ def augment_dataset(
     for gene_id, sequence in target_sequences:
         # We assume sequence is just the string.
         # edit_distance returns (dist, geodesic) when geodesic=True
-        res = edit_distance(
-            "", sequence, distance_type="cped", geodesic=True
-        )
+        res = edit_distance("", sequence, distance_type="cped", geodesic=True)
         if isinstance(res, tuple):
-             _, geodesic = res
+            _, geodesic = res
         else:
-             raise ValueError("Expected tuple from edit_distance with geodesic=True")
+            raise ValueError("Expected tuple from edit_distance with geodesic=True")
 
         route = geodesic.get_path_strings()
         n = len(route) - 1
-        
+
         # Avoid division by zero if augment_b is 0, though unlikely
         if augment_b == 0:
             continue
-            
-        augmented.extend([
-            (f'{gene_id.strip()}_{k}_of_{augment_b}', route[(k * n) // augment_b])
-            for k in range(augment_a, augment_b + 1)
-        ])
+
+        augmented.extend(
+            [
+                (f"{gene_id.strip()}_{k}_of_{augment_b}", route[(k * n) // augment_b])
+                for k in range(augment_a, augment_b + 1)
+            ]
+        )
     return augmented
 
 
@@ -242,11 +237,11 @@ class MDS_OOS(BaseEstimator, TransformerMixin):
 def compute_gw_distance(
     matrix_a: np.ndarray,
     matrix_b: np.ndarray,
-    loss_fun: str = 'square_loss',
+    loss_fun: str = "square_loss",
     max_iter: int = 10000,
     tol_rel: float = 1e-6,
     tol_abs: float = 1e-6,
-    symmetric: bool = True
+    symmetric: bool = True,
 ) -> float:
     """Calculates the Gromov-Wasserstein distance between two distance matrices.
 
@@ -272,11 +267,9 @@ def compute_gw_distance(
         maxiter=max_iter,
         tol_rel=tol_rel,
         tol_abs=tol_abs,
-        loss_fun=loss_fun
+        loss_fun=loss_fun,
     )
 
     return ot.gromov.gromov_wasserstein2(
-        matrix_a, matrix_b, p_a, p_b,
-        symmetric=symmetric, **gw_config
+        matrix_a, matrix_b, p_a, p_b, symmetric=symmetric, **gw_config
     )
-
