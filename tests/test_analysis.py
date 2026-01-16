@@ -1,6 +1,6 @@
 
 import numpy as np
-from repmetric.analysis import sliding_windows, calculate_maximal_bandwidth, MDS_OOS, augment_dataset, splength, compute_gw_distance
+from repmetric.analysis import sliding_windows, MDS_OOS, splength, compute_gw_distance
 
 
 def test_sliding_windows():

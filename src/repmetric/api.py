@@ -56,7 +56,6 @@ def cped(
 
     Raises:
         ValueError: If an unknown backend name is provided.
-        NotImplementedError: If geodesic is True for the C++ backend but the extension is unavailable.
     """
 
     backend_lower = backend.lower()
@@ -66,9 +65,7 @@ def cped(
                 return _calculate_cped_geodesic_cpp(X, Y)
             return _calculate_cped_cpp(X, Y)
         if geodesic:
-            raise NotImplementedError(
-                "Geodesic calculation for CPED requires C++ backend."
-            )
+            return _calculate_cped_geodesic_py(X, Y)
         return _calculate_cped_py(X, Y)
     if backend_lower == "python":
         if geodesic:
