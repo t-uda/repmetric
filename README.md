@@ -46,7 +46,7 @@ poetry run mypy src tests
 All commands should complete without errors before committing changes.
 
 ## Usage examples
-The package offers both pure Python (`python`) and compiled (`cpp`/`c++`) backends. You can specify the distance type and backend when calling `repmetric.edit_distance`:
+The package offers both pure Python (`python`) and compiled (`cpp`/`c++`) backends. You can specify the distance type (`cped`, `levd`/`levenshtein`, or `bicped`) and backend when calling `repmetric.edit_distance`:
 
 ```python
 from repmetric import edit_distance

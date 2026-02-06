@@ -30,6 +30,7 @@ Backend = Literal["cpp", "c++", "python"]
 DistanceType = Literal[
     "cped",
     "levd",
+    "levenshtein",
     "bicped",
 ]
 
@@ -262,7 +263,7 @@ def edit_distance(
             distance matrix.
         b: The second string to compare. Must be ``None`` when ``a`` is a list.
         distance_type: Which edit distance variant to compute. Accepted values
-            are ``"cped"``, ``"levd"``, and ``"bicped"``.
+            are ``"cped"``, ``"levd"``/``"levenshtein"``, and ``"bicped"``.
         backend: Execution backend. ``"cpp"`` (default) attempts to use the
             compiled implementation and falls back to the Python
             implementation if the extension is unavailable. ``"python"`` forces
@@ -292,7 +293,7 @@ def edit_distance(
             return cped_matrix(a, backend=backend, parallel=parallel)
         if distance_type_lower == "bicped":
             return bicped_matrix(a, backend=backend, parallel=parallel)
-        if distance_type_lower == "levd":
+        if distance_type_lower in ("levd", "levenshtein"):
             return levd_matrix(a, backend=backend, parallel=parallel)
         raise ValueError(f"Unknown distance_type: {distance_type}")
     elif isinstance(a, str) and isinstance(b, str):
@@ -303,7 +304,7 @@ def edit_distance(
             if geodesic:
                 raise NotImplementedError("Geodesic not implemented for BICPed")
             return bicped(a, b, backend=backend)
-        if distance_type_lower == "levd":
+        if distance_type_lower in ("levd", "levenshtein"):
             return levd(a, b, backend=backend, geodesic=geodesic)
         raise ValueError(f"Unknown distance_type: {distance_type}")
     else:
