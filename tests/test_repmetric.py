@@ -103,6 +103,11 @@ def test_edit_distance_levd(s1, s2, expected):
     assert repmetric.edit_distance(s1, s2, distance_type="levd") == expected
 
 
+@pytest.mark.parametrize("s1, s2, expected", LEVD_TEST_CASES)
+def test_edit_distance_levenshtein_alias(s1, s2, expected):
+    assert repmetric.edit_distance(s1, s2, distance_type="levenshtein") == expected
+
+
 @pytest.mark.parametrize("X, Y, expected", CPED_TEST_CASES)
 def test_edit_distance_cped(X, Y, expected):
     assert repmetric.edit_distance(X, Y, distance_type="cped") == expected
@@ -144,6 +149,12 @@ def test_edit_distance_matrix():
     # Test python implementation
     np.testing.assert_array_equal(
         repmetric.edit_distance(sequences, distance_type="levd", backend="python"),
+        expected_levd,
+    )
+    np.testing.assert_array_equal(
+        repmetric.edit_distance(
+            sequences, distance_type="levenshtein", backend="python"
+        ),
         expected_levd,
     )
     np.testing.assert_array_equal(
